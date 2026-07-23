@@ -21,6 +21,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [content,setContent]=useState<SiteContent>(defaultContent);
   const {coaches,membershipPlans,schedule,siteInfo}=content;
+  const h=content.home;
   useEffect(()=>{fetch("/api/content",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(setContent).catch(()=>{})},[]);
 
   useEffect(() => {
@@ -84,69 +85,69 @@ export default function Home() {
       <header>
         <a className="brand" href="#home">
           <img src="/adrenaline-logo.jpg" alt="" />
-          <span><strong>ADRENALINE</strong><small>FITNESS SPORT CENTER</small></span>
+          <span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span>
         </a>
         <nav className={menu ? "open" : ""}>
-          {[["about", "Бидний тухай"], ["membership", "Гишүүнчлэл"], ["coaches", "Дасгалжуулагч"], ["schedule", "Хуваарь"], ["contact", "Холбоо"]].map(([id, label]) => (
+          {[["about", h.nav.about], ["membership", h.nav.membership], ["coaches", h.nav.coaches], ["schedule", h.nav.schedule], ["contact", h.nav.contact]].map(([id, label]) => (
             <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>{label}</a>
           ))}
           {content.pages.filter((item) => item.status === "published" && item.showInNav).map((item) => <a href={`/${item.slug}`} key={item.id}>{item.title}</a>)}
         </nav>
-        <a className="top-cta" href="#membership">ЭРХ АВАХ ↗</a>
+        <a className="top-cta" href="#membership">{h.topCta}</a>
         <button className="menu" type="button" aria-label="Цэс" aria-expanded={menu} onClick={() => setMenu(!menu)}><i /><i /></button>
       </header>
 
       <section className="hero" id="home">
         <div className="grid-lines" />
         <div className="hero-copy">
-          <span className="kicker"><i /> FITNESS • STRENGTH • COMMUNITY</span>
-          <h1>ХҮЧЭЭ СЭРЭЭ.<br /><em>ХЯЗГААРАА ДАВ.</em></h1>
-          <p>Зөв орчин, зөв хөтөлбөр, зөв хүмүүсийн дунд өөрийн хамгийн хүчтэй хувилбарыг бүтээ.</p>
+          <span className="kicker"><i /> {h.hero.kicker}</span>
+          <h1>{h.hero.title}<br /><em>{h.hero.accent}</em></h1>
+          <p>{h.hero.copy}</p>
           <div className="actions">
-            <a className="btn primary" href="#membership">ГИШҮҮНЧЛЭЛ СОНГОХ ↗</a>
-            <a className="btn ghost" href="#schedule">ХИЧЭЭЛИЙН ХУВААРЬ</a>
+            <a className="btn primary" href="#membership">{h.hero.primaryCta}</a>
+            <a className="btn ghost" href="#schedule">{h.hero.secondaryCta}</a>
           </div>
         </div>
         <div className="emblem" aria-hidden="true">
           <div className="orbit one" /><div className="orbit two" />
           <img src="/adrenaline-logo.jpg" alt="" />
-          <span>FOCUS · POWER · DISCIPLINE</span>
+          <span>{h.hero.orbitText}</span>
         </div>
       </section>
 
       <section className="stats">
-        {[ ["7", "хоног нээлттэй"], ["3", "гишүүнчлэлийн сонголт"], ["1:1", "зорилгод тохирсон зөвлөгөө"] ].map(([value, label], i) => (
-          <div key={label}><small>0{i + 1}</small><strong>{value}</strong><span>{label}</span></div>
+        {h.stats.map((item, i) => (
+          <div key={item.id}><small>0{i + 1}</small><strong>{item.value}</strong><span>{item.label}</span></div>
         ))}
       </section>
 
       <section className="section about" id="about">
-        <Title number="01" label="БИДНИЙ ТУХАЙ" title={<>ДАСГАЛ БОЛ ЗӨВХӨН<br /><em>БИЕИЙН ХӨДӨЛГӨӨН БИШ.</em></>} copy="Adrenaline бол зорилгоо тодорхойлж, өөрийгөө сорьж, тогтвортой ахиц гаргах хүмүүсийн орон зай." />
+        <Title number="01" label={h.about.label} title={<>{h.about.title}<br /><em>{h.about.accent}</em></>} copy={h.about.copy} />
         <div className="values">
-          {[ ["◎", "ЗОРИЛГОД ТӨВЛӨРНӨ", "Таны түвшин, боломж, зорилгод нийцсэн бодит алхмаас эхэлнэ."], ["▥", "АХИЦЫГ ХЭМЖИНЭ", "Мэдрэмжээс гадна ахиц, давтамж, гүйцэтгэлийг харна."], ["◉", "ХАМТДАА ХҮЧТЭЙ", "Дэмждэг, урам өгдөг, тууштай байхад туслах community."] ].map(([symbol, title, copy], i) => (
-            <article key={title}><small>A / 0{i + 1}</small><b aria-hidden="true">{symbol}</b><h3>{title}</h3><p>{copy}</p></article>
+          {h.about.values.map((item, i) => (
+            <article key={item.id}><small>A / 0{i + 1}</small><b aria-hidden="true">{item.symbol}</b><h3>{item.title}</h3><p>{item.copy}</p></article>
           ))}
         </div>
       </section>
 
       <section className="section memberships" id="membership">
-        <Title number="02" label="ГИШҮҮНЧЛЭЛ" title={<>ӨӨРИЙН ХЭМНЭЛЭЭ<br /><em>СОНГО.</em></>} copy="Нэг өдрийн сэдэл биш, үргэлжлэх систем. Танд тохирох хугацаагаа сонгоод QPay-аар эрхээ аваарай." />
+        <Title number="02" label={h.membership.label} title={<>{h.membership.title}<br /><em>{h.membership.accent}</em></>} copy={h.membership.copy} />
         <div className="plans">
           {membershipPlans.map((item) => (
             <article className={item.featured ? "featured" : ""} key={item.id}>
-              {item.featured && <span className="badge">ХАМГИЙН ЭРЭЛТТЭЙ</span>}
+              {item.featured && <span className="badge">{h.membership.badge}</span>}
               <small>{item.duration}</small><h3>{item.name}</h3><p>{item.description}</p>
-              <div className="price"><strong>{money.format(item.price)}₮</strong><span>/ эрх</span></div>
+              <div className="price"><strong>{money.format(item.price)}₮</strong><span>{h.membership.priceSuffix}</span></div>
               <ul>{item.features.map((feature) => <li key={feature}>✓ {feature}</li>)}</ul>
-              <button className={`btn ${item.featured ? "primary" : "ghost"}`} type="button" onClick={() => setPlan(item)}>QPAY-ААР АВАХ ↗</button>
+              <button className={`btn ${item.featured ? "primary" : "ghost"}`} type="button" onClick={() => setPlan(item)}>{h.membership.button}</button>
             </article>
           ))}
         </div>
-        <p className="note">* Үнэ, нөхцөл нь жишиг мэдээлэл бөгөөд албан ёсны мэдээллээр шинэчилнэ.</p>
+        <p className="note">{h.membership.note}</p>
       </section>
 
       <section className="section coach-section" id="coaches">
-        <Title number="03" label="ДАСГАЛЖУУЛАГЧИД" title={<>ТАНЫ АХИЦЫН<br /><em>АРД БАЙХ ХҮМҮҮС.</em></>} copy="Мэргэжлийн чиглэл бүрээр зөв техник, бодит ахиц, тогтвортой үр дүнд хөтөлнө." />
+        <Title number="03" label={h.coachSection.label} title={<>{h.coachSection.title}<br /><em>{h.coachSection.accent}</em></>} copy={h.coachSection.copy} />
         <div className="coaches">
           {coaches.map((coach, i) => (
             <article key={coach.id || coach.role}>
@@ -158,35 +159,35 @@ export default function Home() {
       </section>
 
       <section className="section timetable" id="schedule">
-        <Title number="04" label="ЦАГИЙН ХУВААРЬ" title={<>ӨДӨР БҮР<br /><em>ХӨДӨЛГӨӨНТЭЙ.</em></>} copy="Өөрийн хэмнэлд тохирох өдрөө сонго. Групп хичээлийн суудал хязгаартай." />
+        <Title number="04" label={h.timetable.label} title={<>{h.timetable.title}<br /><em>{h.timetable.accent}</em></>} copy={h.timetable.copy} />
         <div className="schedule">
           <div className="days" role="tablist">{schedule.map((item, i) => <button className={day === i ? "active" : ""} role="tab" aria-selected={day === i} type="button" key={item.day} onClick={() => setDay(i)}><small>0{i + 1}</small>{item.day}</button>)}</div>
           <div className="sessions" role="tabpanel">
-            <div className="session-title"><strong>{schedule[day].day}</strong><span>{schedule[day].sessions.length} хичээл</span></div>
+            <div className="session-title"><strong>{schedule[day].day}</strong><span>{schedule[day].sessions.length} {h.timetable.countSuffix}</span></div>
             {schedule[day].sessions.map(([time, title]) => <div className="session" key={`${time}-${title}`}><time>{time}</time><strong>{title}</strong><a href="#contact">↗</a></div>)}
           </div>
         </div>
-        <p className="note">* Хуваарь нь загвар мэдээлэл бөгөөд бодит хуваариар шинэчилнэ.</p>
+        <p className="note">{h.timetable.note}</p>
       </section>
 
       <section className="section contact" id="contact">
         <div className="contact-copy">
-          <span className="section-kicker">05 · БАЙРШИЛ & ХОЛБОО</span>
-          <h2>ЭХНИЙ АЛХМАА<br /><em>ӨНӨӨДӨР ХИЙ.</em></h2>
-          <p>Гишүүнчлэл, дасгалжуулагч болон туршилтын эрхийн талаар бидэнтэй холбогдоорой.</p>
-          <div className="contact-list"><a href={`tel:${siteInfo.phone}`}><small>УТАС</small><strong>{siteInfo.phone}</strong><span>↗</span></a><a href={`mailto:${siteInfo.email}`}><small>И-МЭЙЛ</small><strong>{siteInfo.email}</strong><span>↗</span></a><div><small>ХАЯГ</small><strong>{siteInfo.address}</strong></div></div>
+          <span className="section-kicker">05 · {h.contact.label}</span>
+          <h2>{h.contact.title}<br /><em>{h.contact.accent}</em></h2>
+          <p>{h.contact.copy}</p>
+          <div className="contact-list"><a href={`tel:${siteInfo.phone}`}><small>{h.contact.phoneLabel}</small><strong>{siteInfo.phone}</strong><span>↗</span></a><a href={`mailto:${siteInfo.email}`}><small>{h.contact.emailLabel}</small><strong>{siteInfo.email}</strong><span>↗</span></a><div><small>{h.contact.addressLabel}</small><strong>{siteInfo.address}</strong></div></div>
         </div>
-        <div className="map"><div className="map-lines" /><span><img src="/adrenaline-logo.jpg" alt="" /></span><footer><div><small>ADRENALINE FITNESS</small><strong>БАЙРШИЛ ХАРАХ</strong></div><a href={siteInfo.mapUrl||"#contact"} target={siteInfo.mapUrl?"_blank":undefined}>↗</a></footer></div>
+        <div className="map"><div className="map-lines" /><span><img src="/adrenaline-logo.jpg" alt="" /></span><footer><div><small>{h.contact.mapEyebrow}</small><strong>{h.contact.mapButton}</strong></div><a href={siteInfo.mapUrl||"#contact"} target={siteInfo.mapUrl?"_blank":undefined}>↗</a></footer></div>
       </section>
 
-      <section className="final"><span>READY WHEN YOU ARE</span><h2>ХҮЧТЭЙ ЭХЭЛ.<br />ТУУШТАЙ ҮРГЭЛЖЛҮҮЛ.</h2><a className="btn primary" href="#membership">ГИШҮҮНЧЛЭЛ АВАХ ↗</a></section>
-      <footer className="site-footer"><div className="brand"><img src="/adrenaline-logo.jpg" alt="" /><span><strong>ADRENALINE</strong><small>FITNESS SPORT CENTER</small></span></div><p>© {new Date().getFullYear()} Adrenaline Fitness · <a href="/admin">ADMIN</a></p><a href="#home">ДЭЭШ ↑</a></footer>
-      <a className="sticky" href="#membership">ГИШҮҮНЧЛЭЛ АВАХ ↗</a>
+      <section className="final"><span>{h.finalCta.eyebrow}</span><h2>{h.finalCta.title}<br />{h.finalCta.accent}</h2><a className="btn primary" href="#membership">{h.finalCta.button}</a></section>
+      <footer className="site-footer"><div className="brand"><img src="/adrenaline-logo.jpg" alt="" /><span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span></div><p>© {new Date().getFullYear()} {h.footer.copyright} · <a href="/admin">{h.footer.adminLabel}</a></p><a href="#home">{h.footer.backToTop}</a></footer>
+      <a className="sticky" href="#membership">{h.finalCta.button}</a>
 
-      {plan && <div className="backdrop" onMouseDown={closeCheckout}><section className="modal" role="dialog" aria-modal="true" aria-label="QPay төлбөр" onMouseDown={(event) => event.stopPropagation()}><button className="close" type="button" onClick={closeCheckout}>×</button><span className="section-kicker">QPAY ГИШҮҮНЧЛЭЛ</span><h2>{plan.name}</h2><div className="summary"><span>{plan.duration}</span><strong>{money.format(plan.price)}₮</strong></div>
-        {(status === "idle" || status === "loading") && <><p>QPay нэхэмжлэх үүсгээд банкны апп-аар төлнө. Төлбөр баталгаажмагц эрхийг идэвхжүүлнэ.</p><button className="btn primary" type="button" disabled={status === "loading"} onClick={createInvoice}>{status === "loading" ? "ҮҮСГЭЖ БАЙНА..." : "QPAY НЭХЭМЖЛЭХ ҮҮСГЭХ"}</button></>}
-        {status === "error" && <div className="error"><strong>QPay холболт хүлээгдэж байна</strong><p>{message}</p><p>Merchant credential нэмэхэд автоматаар ажиллана.</p><a className="btn ghost" href={`tel:${siteInfo.phone}`}>УТСААР ХОЛБОГДОХ</a></div>}
-        {payment && ["ready", "checking", "paid"].includes(status) && <div className="pay-ready">{payment.qrImage && <img className="qr" src={payment.qrImage.startsWith("data:") ? payment.qrImage : `data:image/png;base64,${payment.qrImage}`} alt="QPay QR" />}<p>QR кодыг уншуулах эсвэл QPay-г нээнэ үү.</p>{payment.shortUrl && <a className="btn primary" href={payment.shortUrl} target="_blank" rel="noreferrer">QPAY НЭЭХ ↗</a>}<button className="check" type="button" disabled={status === "checking" || status === "paid"} onClick={checkPayment}>{status === "paid" ? "✓ ТӨЛБӨР БАТАЛГААЖЛАА" : status === "checking" ? "ШАЛГАЖ БАЙНА..." : "ТӨЛБӨР ШАЛГАХ"}</button>{message && <small>{message}</small>}</div>}
+      {plan && <div className="backdrop" onMouseDown={closeCheckout}><section className="modal" role="dialog" aria-modal="true" aria-label="QPay төлбөр" onMouseDown={(event) => event.stopPropagation()}><button className="close" type="button" onClick={closeCheckout}>×</button><span className="section-kicker">{h.payment.label}</span><h2>{plan.name}</h2><div className="summary"><span>{plan.duration}</span><strong>{money.format(plan.price)}₮</strong></div>
+        {(status === "idle" || status === "loading") && <><p>{h.payment.intro}</p><button className="btn primary" type="button" disabled={status === "loading"} onClick={createInvoice}>{status === "loading" ? h.payment.creating : h.payment.createButton}</button></>}
+        {status === "error" && <div className="error"><strong>{h.payment.pendingTitle}</strong><p>{message}</p><p>{h.payment.pendingCopy}</p><a className="btn ghost" href={`tel:${siteInfo.phone}`}>{h.payment.phoneButton}</a></div>}
+        {payment && ["ready", "checking", "paid"].includes(status) && <div className="pay-ready">{payment.qrImage && <img className="qr" src={payment.qrImage.startsWith("data:") ? payment.qrImage : `data:image/png;base64,${payment.qrImage}`} alt="QPay QR" />}<p>{h.payment.qrCopy}</p>{payment.shortUrl && <a className="btn primary" href={payment.shortUrl} target="_blank" rel="noreferrer">{h.payment.openButton}</a>}<button className="check" type="button" disabled={status === "checking" || status === "paid"} onClick={checkPayment}>{status === "paid" ? h.payment.paid : status === "checking" ? h.payment.checking : h.payment.checkButton}</button>{message && <small>{message}</small>}</div>}
       </section></div>}
     </main>
   );
