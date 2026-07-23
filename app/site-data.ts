@@ -85,3 +85,10 @@ export const schedule = [
   { day: "Ням", sessions: [["11:00", "Recovery Flow"], ["13:00", "Open Gym"], ["16:00", "Core & Balance"]] },
 ];
 
+export type SiteContent = {
+  siteInfo: typeof siteInfo & { mapUrl?: string; facebookUrl?: string };
+  membershipPlans: MembershipPlan[];
+  coaches: Array<(typeof coaches)[number] & { id?: string; name?: string; image?: string }>;
+  schedule: typeof schedule;
+};
+export const defaultContent: SiteContent = { siteInfo: { ...siteInfo, mapUrl: "", facebookUrl: "" }, membershipPlans, coaches: coaches.map((coach, i) => ({ ...coach, id: `coach-${i + 1}`, name: "", image: "" })), schedule };

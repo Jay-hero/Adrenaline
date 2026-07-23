@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { coaches, membershipPlans, schedule, siteInfo, type MembershipPlan } from "./site-data";
+import { defaultContent, type MembershipPlan, type SiteContent } from "./site-data";
 
 type Payment = {
   invoiceId: string;
@@ -19,6 +19,9 @@ export default function Home() {
   const [payment, setPayment] = useState<Payment | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "checking" | "paid" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [content,setContent]=useState<SiteContent>(defaultContent);
+  const {coaches,membershipPlans,schedule,siteInfo}=content;
+  useEffect(()=>{fetch("/api/content",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(setContent).catch(()=>{})},[]);
 
   useEffect(() => {
     if (!plan) return;
@@ -145,9 +148,9 @@ export default function Home() {
         <Title number="03" label="ДАСГАЛЖУУЛАГЧИД" title={<>ТАНЫ АХИЦЫН<br /><em>АРД БАЙХ ХҮМҮҮС.</em></>} copy="Мэргэжлийн чиглэл бүрээр зөв техник, бодит ахиц, тогтвортой үр дүнд хөтөлнө." />
         <div className="coaches">
           {coaches.map((coach, i) => (
-            <article key={coach.role}>
-              <div className="portrait"><span>{coach.code}</span><small>0{i + 1}</small></div>
-              <div className="coach-copy"><small>{coach.focus}</small><h3>{coach.role}</h3><p>{coach.copy}</p></div>
+            <article key={coach.id || coach.role}>
+              <div className={`portrait ${coach.image?"has-image":""}`}>{coach.image?<img src={coach.image} alt={coach.name || coach.role}/>:<span>{coach.code}</span>}<small>0{i + 1}</small></div>
+              <div className="coach-copy"><small>{coach.focus}</small><h3>{coach.name || coach.role}</h3>{coach.name&&<b>{coach.role}</b>}<p>{coach.copy}</p></div>
             </article>
           ))}
         </div>
@@ -158,7 +161,7 @@ export default function Home() {
         <div className="schedule">
           <div className="days" role="tablist">{schedule.map((item, i) => <button className={day === i ? "active" : ""} role="tab" aria-selected={day === i} type="button" key={item.day} onClick={() => setDay(i)}><small>0{i + 1}</small>{item.day}</button>)}</div>
           <div className="sessions" role="tabpanel">
-            <div className="session-title"><strong>{schedule[day].day}</strong><span>3 хичээл</span></div>
+            <div className="session-title"><strong>{schedule[day].day}</strong><span>{schedule[day].sessions.length} хичээл</span></div>
             {schedule[day].sessions.map(([time, title]) => <div className="session" key={`${time}-${title}`}><time>{time}</time><strong>{title}</strong><a href="#contact">↗</a></div>)}
           </div>
         </div>
@@ -172,11 +175,11 @@ export default function Home() {
           <p>Гишүүнчлэл, дасгалжуулагч болон туршилтын эрхийн талаар бидэнтэй холбогдоорой.</p>
           <div className="contact-list"><a href={`tel:${siteInfo.phone}`}><small>УТАС</small><strong>{siteInfo.phone}</strong><span>↗</span></a><a href={`mailto:${siteInfo.email}`}><small>И-МЭЙЛ</small><strong>{siteInfo.email}</strong><span>↗</span></a><div><small>ХАЯГ</small><strong>{siteInfo.address}</strong></div></div>
         </div>
-        <div className="map"><div className="map-lines" /><span><img src="/adrenaline-logo.jpg" alt="" /></span><footer><div><small>ADRENALINE FITNESS</small><strong>БАЙРШИЛ ХАРАХ</strong></div><a href="#contact">↗</a></footer></div>
+        <div className="map"><div className="map-lines" /><span><img src="/adrenaline-logo.jpg" alt="" /></span><footer><div><small>ADRENALINE FITNESS</small><strong>БАЙРШИЛ ХАРАХ</strong></div><a href={siteInfo.mapUrl||"#contact"} target={siteInfo.mapUrl?"_blank":undefined}>↗</a></footer></div>
       </section>
 
       <section className="final"><span>READY WHEN YOU ARE</span><h2>ХҮЧТЭЙ ЭХЭЛ.<br />ТУУШТАЙ ҮРГЭЛЖЛҮҮЛ.</h2><a className="btn primary" href="#membership">ГИШҮҮНЧЛЭЛ АВАХ ↗</a></section>
-      <footer className="site-footer"><div className="brand"><img src="/adrenaline-logo.jpg" alt="" /><span><strong>ADRENALINE</strong><small>FITNESS SPORT CENTER</small></span></div><p>© {new Date().getFullYear()} Adrenaline Fitness</p><a href="#home">ДЭЭШ ↑</a></footer>
+      <footer className="site-footer"><div className="brand"><img src="/adrenaline-logo.jpg" alt="" /><span><strong>ADRENALINE</strong><small>FITNESS SPORT CENTER</small></span></div><p>© {new Date().getFullYear()} Adrenaline Fitness · <a href="/admin">ADMIN</a></p><a href="#home">ДЭЭШ ↑</a></footer>
       <a className="sticky" href="#membership">ГИШҮҮНЧЛЭЛ АВАХ ↗</a>
 
       {plan && <div className="backdrop" onMouseDown={closeCheckout}><section className="modal" role="dialog" aria-modal="true" aria-label="QPay төлбөр" onMouseDown={(event) => event.stopPropagation()}><button className="close" type="button" onClick={closeCheckout}>×</button><span className="section-kicker">QPAY ГИШҮҮНЧЛЭЛ</span><h2>{plan.name}</h2><div className="summary"><span>{plan.duration}</span><strong>{money.format(plan.price)}₮</strong></div>
@@ -191,4 +194,3 @@ export default function Home() {
 function Title({ number, label, title, copy }: { number: string; label: string; title: React.ReactNode; copy: string }) {
   return <div className="title"><div><span className="section-kicker">{number} · {label}</span><h2>{title}</h2></div><p>{copy}</p></div>;
 }
-
