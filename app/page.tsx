@@ -22,7 +22,17 @@ export default function Home() {
   const [content,setContent]=useState<SiteContent>(defaultContent);
   const {coaches,membershipPlans,schedule,siteInfo}=content;
   const h=content.home;
-  useEffect(()=>{fetch("/api/content",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(setContent).catch(()=>{})},[]);
+  useEffect(()=>{if(new URLSearchParams(location.search).has("visual-editor"))return;fetch("/api/content",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(setContent).catch(()=>{})},[]);
+  useEffect(()=>{
+    const visual=new URLSearchParams(location.search).has("visual-editor");
+    if(!visual)return;
+    document.documentElement.classList.add("visual-editor-page");
+    const receive=(event:MessageEvent)=>{if(event.origin===location.origin&&event.data?.type==="ADRENALINE_PREVIEW_CONTENT")setContent(event.data.content)};
+    const pick=(event:MouseEvent)=>{const el=(event.target as HTMLElement).closest<HTMLElement>("[data-edit-section]");if(!el)return;event.preventDefault();event.stopPropagation();parent.postMessage({type:"ADRENALINE_PICK_SECTION",section:el.dataset.editSection,label:el.dataset.editLabel},location.origin)};
+    window.addEventListener("message",receive);document.addEventListener("click",pick,true);
+    parent.postMessage({type:"ADRENALINE_PREVIEW_READY"},location.origin);
+    return()=>{window.removeEventListener("message",receive);document.removeEventListener("click",pick,true);document.documentElement.classList.remove("visual-editor-page")};
+  },[]);
 
   useEffect(() => {
     if (!plan) return;
@@ -82,7 +92,7 @@ export default function Home() {
 
   return (
     <main>
-      <header>
+      <header data-edit-section="home" data-edit-label="Толгой хэсэг ба цэс">
         <a className="brand" href="#home">
           <img src="/adrenaline-logo.jpg" alt="" />
           <span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span>
@@ -97,7 +107,7 @@ export default function Home() {
         <button className="menu" type="button" aria-label="Цэс" aria-expanded={menu} onClick={() => setMenu(!menu)}><i /><i /></button>
       </header>
 
-      <section className="hero" id="home">
+      <section className="hero" id="home" data-edit-section="home" data-edit-label="Hero хэсэг">
         <div className="grid-lines" />
         <div className="hero-copy">
           <span className="kicker"><i /> {h.hero.kicker}</span>
@@ -115,13 +125,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="stats">
+      <section className="stats" data-edit-section="home" data-edit-label="Статистик">
         {h.stats.map((item, i) => (
           <div key={item.id}><small>0{i + 1}</small><strong>{item.value}</strong><span>{item.label}</span></div>
         ))}
       </section>
 
-      <section className="section about" id="about">
+      <section className="section about" id="about" data-edit-section="home" data-edit-label="Бидний тухай">
         <Title number="01" label={h.about.label} title={<>{h.about.title}<br /><em>{h.about.accent}</em></>} copy={h.about.copy} />
         <div className="values">
           {h.about.values.map((item, i) => (
@@ -130,7 +140,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section memberships" id="membership">
+      <section className="section memberships" id="membership" data-edit-section="membership" data-edit-label="Гишүүнчлэл">
         <Title number="02" label={h.membership.label} title={<>{h.membership.title}<br /><em>{h.membership.accent}</em></>} copy={h.membership.copy} />
         <div className="plans">
           {membershipPlans.map((item) => (
@@ -146,7 +156,7 @@ export default function Home() {
         <p className="note">{h.membership.note}</p>
       </section>
 
-      <section className="section coach-section" id="coaches">
+      <section className="section coach-section" id="coaches" data-edit-section="coaches" data-edit-label="Дасгалжуулагч">
         <Title number="03" label={h.coachSection.label} title={<>{h.coachSection.title}<br /><em>{h.coachSection.accent}</em></>} copy={h.coachSection.copy} />
         <div className="coaches">
           {coaches.map((coach, i) => (
@@ -158,7 +168,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section timetable" id="schedule">
+      <section className="section timetable" id="schedule" data-edit-section="schedule" data-edit-label="Цагийн хуваарь">
         <Title number="04" label={h.timetable.label} title={<>{h.timetable.title}<br /><em>{h.timetable.accent}</em></>} copy={h.timetable.copy} />
         <div className="schedule">
           <div className="days" role="tablist">{schedule.map((item, i) => <button className={day === i ? "active" : ""} role="tab" aria-selected={day === i} type="button" key={item.day} onClick={() => setDay(i)}><small>0{i + 1}</small>{item.day}</button>)}</div>
@@ -170,7 +180,7 @@ export default function Home() {
         <p className="note">{h.timetable.note}</p>
       </section>
 
-      <section className="section contact" id="contact">
+      <section className="section contact" id="contact" data-edit-section="contact" data-edit-label="Холбоо барих">
         <div className="contact-copy">
           <span className="section-kicker">05 · {h.contact.label}</span>
           <h2>{h.contact.title}<br /><em>{h.contact.accent}</em></h2>
@@ -180,8 +190,8 @@ export default function Home() {
         <div className="map"><div className="map-lines" /><span><img src="/adrenaline-logo.jpg" alt="" /></span><footer><div><small>{h.contact.mapEyebrow}</small><strong>{h.contact.mapButton}</strong></div><a href={siteInfo.mapUrl||"#contact"} target={siteInfo.mapUrl?"_blank":undefined}>↗</a></footer></div>
       </section>
 
-      <section className="final"><span>{h.finalCta.eyebrow}</span><h2>{h.finalCta.title}<br />{h.finalCta.accent}</h2><a className="btn primary" href="#membership">{h.finalCta.button}</a></section>
-      <footer className="site-footer"><div className="brand"><img src="/adrenaline-logo.jpg" alt="" /><span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span></div><p>© {new Date().getFullYear()} {h.footer.copyright} · <a href="/admin">{h.footer.adminLabel}</a></p><a href="#home">{h.footer.backToTop}</a></footer>
+      <section className="final" data-edit-section="home" data-edit-label="Доод уриалга"><span>{h.finalCta.eyebrow}</span><h2>{h.finalCta.title}<br />{h.finalCta.accent}</h2><a className="btn primary" href="#membership">{h.finalCta.button}</a></section>
+      <footer className="site-footer" data-edit-section="home" data-edit-label="Footer"><div className="brand"><img src="/adrenaline-logo.jpg" alt="" /><span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span></div><p>© {new Date().getFullYear()} {h.footer.copyright} · <a href="/admin">{h.footer.adminLabel}</a></p><a href="#home">{h.footer.backToTop}</a></footer>
       <a className="sticky" href="#membership">{h.finalCta.button}</a>
 
       {plan && <div className="backdrop" onMouseDown={closeCheckout}><section className="modal" role="dialog" aria-modal="true" aria-label="QPay төлбөр" onMouseDown={(event) => event.stopPropagation()}><button className="close" type="button" onClick={closeCheckout}>×</button><span className="section-kicker">{h.payment.label}</span><h2>{plan.name}</h2><div className="summary"><span>{plan.duration}</span><strong>{money.format(plan.price)}₮</strong></div>
