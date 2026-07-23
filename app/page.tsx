@@ -90,6 +90,7 @@ export default function Home() {
           {[["about", "Бидний тухай"], ["membership", "Гишүүнчлэл"], ["coaches", "Дасгалжуулагч"], ["schedule", "Хуваарь"], ["contact", "Холбоо"]].map(([id, label]) => (
             <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>{label}</a>
           ))}
+          {content.pages.filter((item) => item.status === "published" && item.showInNav).map((item) => <a href={`/${item.slug}`} key={item.id}>{item.title}</a>)}
         </nav>
         <a className="top-cta" href="#membership">ЭРХ АВАХ ↗</a>
         <button className="menu" type="button" aria-label="Цэс" aria-expanded={menu} onClick={() => setMenu(!menu)}><i /><i /></button>

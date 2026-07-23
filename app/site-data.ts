@@ -90,5 +90,8 @@ export type SiteContent = {
   membershipPlans: MembershipPlan[];
   coaches: Array<(typeof coaches)[number] & { id?: string; name?: string; image?: string }>;
   schedule: typeof schedule;
+  pages: CmsPage[];
 };
-export const defaultContent: SiteContent = { siteInfo: { ...siteInfo, mapUrl: "", facebookUrl: "" }, membershipPlans, coaches: coaches.map((coach, i) => ({ ...coach, id: `coach-${i + 1}`, name: "", image: "" })), schedule };
+export type CmsBlock = { id: string; type: "heading" | "text" | "image" | "cta"; title?: string; body?: string; image?: string; buttonLabel?: string; buttonUrl?: string };
+export type CmsPage = { id: string; title: string; slug: string; excerpt: string; heroImage?: string; status: "draft" | "published"; showInNav: boolean; seoTitle: string; seoDescription: string; blocks: CmsBlock[] };
+export const defaultContent: SiteContent = { siteInfo: { ...siteInfo, mapUrl: "", facebookUrl: "" }, membershipPlans, coaches: coaches.map((coach, i) => ({ ...coach, id: `coach-${i + 1}`, name: "", image: "" })), schedule, pages: [] };
