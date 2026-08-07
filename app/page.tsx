@@ -11,6 +11,16 @@ type Payment = {
 };
 
 const money = new Intl.NumberFormat("mn-MN");
+const trackerDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const habitList = [
+  { id: "workout", label: "Workout", target: "45 min" },
+  { id: "water", label: "Water", target: "2 L" },
+  { id: "steps", label: "Steps", target: "8k" },
+  { id: "protein", label: "Protein", target: "Daily" },
+  { id: "sleep", label: "Sleep", target: "7 h" },
+];
+
+type HabitState = Record<string, boolean>;
 
 export default function Home() {
   const [menu, setMenu] = useState(false);
@@ -19,6 +29,7 @@ export default function Home() {
   const [payment, setPayment] = useState<Payment | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "checking" | "paid" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [habits, setHabits] = useState<HabitState>({});
   const [content,setContent]=useState<SiteContent>(defaultContent);
   const {coaches,membershipPlans,schedule,siteInfo}=content;
   const h=content.home;
@@ -33,6 +44,19 @@ export default function Home() {
     parent.postMessage({type:"ADRENALINE_PREVIEW_READY"},location.origin);
     return()=>{window.removeEventListener("message",receive);document.removeEventListener("click",pick,true);document.documentElement.classList.remove("visual-editor-page")};
   },[]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("adrenaline-habit-tracker");
+      if (stored) setHabits(JSON.parse(stored));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("adrenaline-habit-tracker", JSON.stringify(habits));
+    } catch {}
+  }, [habits]);
 
   useEffect(() => {
     if (!plan) return;
@@ -90,6 +114,26 @@ export default function Home() {
     }
   }
 
+  const completedHabits = Object.values(habits).filter(Boolean).length;
+  const totalHabits = habitList.length * trackerDays.length;
+  const progress = Math.round((completedHabits / totalHabits) * 100);
+  const bestDay = trackerDays.reduce(
+    (best, dayName) => {
+      const count = habitList.filter((habit) => habits[`${habit.id}-${dayName}`]).length;
+      return count > best.count ? { day: dayName, count } : best;
+    },
+    { day: trackerDays[0], count: 0 },
+  );
+
+  function toggleHabit(habitId: string, dayName: string) {
+    const key = `${habitId}-${dayName}`;
+    setHabits((current) => ({ ...current, [key]: !current[key] }));
+  }
+
+  function resetHabits() {
+    setHabits({});
+  }
+
   return (
     <main>
       <header data-edit-section="home" data-edit-label="Толгой хэсэг ба цэс">
@@ -98,7 +142,7 @@ export default function Home() {
           <span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span>
         </a>
         <nav className={menu ? "open" : ""}>
-          {[["about", h.nav.about], ["membership", h.nav.membership], ["coaches", h.nav.coaches], ["schedule", h.nav.schedule], ["contact", h.nav.contact]].map(([id, label]) => (
+          {[["about", h.nav.about], ["tracker", "Habit"], ["membership", h.nav.membership], ["coaches", h.nav.coaches], ["schedule", h.nav.schedule], ["contact", h.nav.contact]].map(([id, label]) => (
             <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>{label}</a>
           ))}
           {content.pages.filter((item) => item.status === "published" && item.showInNav).map((item) => <a href={`/${item.slug}`} key={item.id}>{item.title}</a>)}
@@ -131,8 +175,37 @@ export default function Home() {
         ))}
       </section>
 
+      <section className="section habit-tracker" id="tracker" data-edit-section="home" data-edit-label="Habit tracker">
+        <Title number="01" label="HABIT TRACKER" title={<>7 DAYS.<br /><em>ONE DISCIPLINE.</em></>} copy="Track workouts, water, steps, protein, and sleep for the week. Your progress stays saved on this device." />
+        <div className="tracker-shell">
+          <div className="tracker-summary">
+            <span className="section-kicker">THIS WEEK</span>
+            <strong>{progress}%</strong>
+            <p>{completedHabits} / {totalHabits} habits complete. Strongest day: {bestDay.day}</p>
+            <div className="tracker-bar" aria-label={`${progress}% complete`}><span style={{ width: `${progress}%` }} /></div>
+            <button className="btn ghost" type="button" onClick={resetHabits}>RESET WEEK</button>
+          </div>
+          <div className="tracker-board" aria-label="Weekly habit tracker">
+            <div className="tracker-head"><span>Habit</span>{trackerDays.map((dayName) => <span key={dayName}>{dayName}</span>)}</div>
+            {habitList.map((habit) => (
+              <div className="tracker-row" key={habit.id}>
+                <div><strong>{habit.label}</strong><small>{habit.target}</small></div>
+                {trackerDays.map((dayName) => {
+                  const key = `${habit.id}-${dayName}`;
+                  return (
+                    <button className={habits[key] ? "done" : ""} type="button" key={key} aria-pressed={!!habits[key]} aria-label={`${habit.label} ${dayName}`} onClick={() => toggleHabit(habit.id, dayName)}>
+                      <span />
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="section about" id="about" data-edit-section="home" data-edit-label="Бидний тухай">
-        <Title number="01" label={h.about.label} title={<>{h.about.title}<br /><em>{h.about.accent}</em></>} copy={h.about.copy} />
+        <Title number="02" label={h.about.label} title={<>{h.about.title}<br /><em>{h.about.accent}</em></>} copy={h.about.copy} />
         <div className="values">
           {h.about.values.map((item, i) => (
             <article key={item.id}><small>A / 0{i + 1}</small><b aria-hidden="true">{item.symbol}</b><h3>{item.title}</h3><p>{item.copy}</p></article>
@@ -141,7 +214,7 @@ export default function Home() {
       </section>
 
       <section className="section memberships" id="membership" data-edit-section="membership" data-edit-label="Гишүүнчлэл">
-        <Title number="02" label={h.membership.label} title={<>{h.membership.title}<br /><em>{h.membership.accent}</em></>} copy={h.membership.copy} />
+        <Title number="03" label={h.membership.label} title={<>{h.membership.title}<br /><em>{h.membership.accent}</em></>} copy={h.membership.copy} />
         <div className="plans">
           {membershipPlans.map((item) => (
             <article className={item.featured ? "featured" : ""} key={item.id}>
@@ -157,7 +230,7 @@ export default function Home() {
       </section>
 
       <section className="section coach-section" id="coaches" data-edit-section="coaches" data-edit-label="Дасгалжуулагч">
-        <Title number="03" label={h.coachSection.label} title={<>{h.coachSection.title}<br /><em>{h.coachSection.accent}</em></>} copy={h.coachSection.copy} />
+        <Title number="04" label={h.coachSection.label} title={<>{h.coachSection.title}<br /><em>{h.coachSection.accent}</em></>} copy={h.coachSection.copy} />
         <div className="coaches">
           {coaches.map((coach, i) => (
             <article key={coach.id || coach.role}>
@@ -169,7 +242,7 @@ export default function Home() {
       </section>
 
       <section className="section timetable" id="schedule" data-edit-section="schedule" data-edit-label="Цагийн хуваарь">
-        <Title number="04" label={h.timetable.label} title={<>{h.timetable.title}<br /><em>{h.timetable.accent}</em></>} copy={h.timetable.copy} />
+        <Title number="05" label={h.timetable.label} title={<>{h.timetable.title}<br /><em>{h.timetable.accent}</em></>} copy={h.timetable.copy} />
         <div className="schedule">
           <div className="days" role="tablist">{schedule.map((item, i) => <button className={day === i ? "active" : ""} role="tab" aria-selected={day === i} type="button" key={item.day} onClick={() => setDay(i)}><small>0{i + 1}</small>{item.day}</button>)}</div>
           <div className="sessions" role="tabpanel">
@@ -182,7 +255,7 @@ export default function Home() {
 
       <section className="section contact" id="contact" data-edit-section="contact" data-edit-label="Холбоо барих">
         <div className="contact-copy">
-          <span className="section-kicker">05 · {h.contact.label}</span>
+          <span className="section-kicker">06 · {h.contact.label}</span>
           <h2>{h.contact.title}<br /><em>{h.contact.accent}</em></h2>
           <p>{h.contact.copy}</p>
           <div className="contact-list"><a href={`tel:${siteInfo.phone}`}><small>{h.contact.phoneLabel}</small><strong>{siteInfo.phone}</strong><span>↗</span></a><a href={`mailto:${siteInfo.email}`}><small>{h.contact.emailLabel}</small><strong>{siteInfo.email}</strong><span>↗</span></a><div><small>{h.contact.addressLabel}</small><strong>{siteInfo.address}</strong></div></div>

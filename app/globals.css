@@ -79,6 +79,29 @@ h1 em,.title h2 em,.contact h2 em { color:transparent; -webkit-text-stroke:1px #
 .plans .btn { width:100%; margin-top:auto; }
 .note { margin:22px 0 0; color:#696e76; font-size:10px; }
 
+.habit-tracker { background:radial-gradient(circle at 18% 18%,#e31b2318,transparent 28%),#08090b; }
+.tracker-shell { display:grid; grid-template-columns:330px 1fr; gap:20px; align-items:stretch; }
+.tracker-summary { min-height:420px; display:flex; flex-direction:column; justify-content:flex-end; padding:34px; border:1px solid #e31b2355; background:radial-gradient(circle at 100% 0,#e31b2328,transparent 46%),#101216; }
+.tracker-summary strong { margin:24px 0 12px; font-size:clamp(64px,7vw,104px); line-height:.82; letter-spacing:-.08em; }
+.tracker-summary p { margin:0 0 26px; color:var(--muted); font-size:13px; line-height:1.7; }
+.tracker-bar { height:8px; margin-bottom:26px; overflow:hidden; border:1px solid #ffffff20; background:#050608; }
+.tracker-bar span { display:block; height:100%; background:linear-gradient(90deg,#e31b23,#ff7379); box-shadow:0 0 22px #e31b2380; transition:width .2s ease; }
+.tracker-board { min-width:0; overflow:auto; border:1px solid var(--line); background:#0d0f12; }
+.tracker-head,.tracker-row { min-width:760px; display:grid; grid-template-columns:190px repeat(7,minmax(64px,1fr)); align-items:center; }
+.tracker-head { min-height:58px; border-bottom:1px solid var(--line); color:var(--red); font:8px var(--font-geist-mono),monospace; letter-spacing:.16em; text-transform:uppercase; }
+.tracker-head span { padding:0 16px; text-align:center; }
+.tracker-head span:first-child { text-align:left; }
+.tracker-row { min-height:74px; border-bottom:1px solid var(--line); }
+.tracker-row:last-child { border-bottom:0; }
+.tracker-row>div { padding:0 18px; }
+.tracker-row strong { display:block; font-size:14px; }
+.tracker-row small { display:block; margin-top:6px; color:#747982; font-size:10px; }
+.tracker-row button { width:42px; height:42px; justify-self:center; display:grid; place-items:center; border:1px solid #ffffff25; border-radius:0; background:#ffffff06; cursor:pointer; transition:.18s; }
+.tracker-row button:hover { border-color:#e31b23aa; transform:translateY(-1px); }
+.tracker-row button span { width:14px; height:14px; border:1px solid #ffffff45; background:transparent; transition:.18s; }
+.tracker-row button.done { border-color:#e31b23; background:#e31b2320; box-shadow:0 0 24px #e31b2328; }
+.tracker-row button.done span { border-color:#e31b23; background:var(--red); box-shadow:0 0 16px #e31b23; }
+
 .coaches>article { border:1px solid var(--line); background:#090a0d; }
 .portrait { position:relative; min-height:380px; display:grid; place-items:center; overflow:hidden; border-bottom:1px solid var(--line); background:repeating-linear-gradient(90deg,#ffffff08 0 1px,transparent 1px 42px),linear-gradient(145deg,transparent,#e31b2320),#121418; }
 .portrait:before { content:""; position:absolute; width:210px; height:210px; border:1px solid #ffffff18; border-radius:50%; box-shadow:0 0 0 36px #ffffff05,0 0 0 80px #ffffff03; }
@@ -138,6 +161,8 @@ h1 em,.title h2 em,.contact h2 em { color:transparent; -webkit-text-stroke:1px #
   .hero { min-height:830px; height:auto; grid-template-columns:1fr; padding:130px 36px 100px; } .emblem { position:absolute; right:-130px; bottom:-40px; width:470px; opacity:.3; }
   .section { padding:100px 36px; } .title { flex-direction:column; align-items:flex-start; gap:26px; }
   .values { grid-template-columns:1fr; } .values article { min-height:310px; }
+  .tracker-shell { grid-template-columns:1fr; }
+  .tracker-summary { min-height:300px; }
   .plans,.coaches { grid-template-columns:1fr; } .plans>article { min-height:auto; }
   .coaches>article { display:grid; grid-template-columns:44% 56%; } .portrait { min-height:330px; border-right:1px solid var(--line); border-bottom:0; } .coach-copy { align-self:center; }
   .schedule { grid-template-columns:210px 1fr; } .sessions { padding:28px; }
@@ -154,6 +179,9 @@ h1 em,.title h2 em,.contact h2 em { color:transparent; -webkit-text-stroke:1px #
   .stats { grid-template-columns:1fr; padding:0 22px; } .stats>div,.stats>div:first-child { min-height:100px; grid-template-columns:34px 88px 1fr; padding:18px 0; border-right:0; border-bottom:1px solid var(--line); }
   .section { padding:80px 22px; } .title h2,.contact h2,.final h2 { font-size:clamp(37px,11.5vw,52px); }
   .values article { padding:24px; } .values h3,.values p { left:24px; right:24px; }
+  .tracker-summary { padding:26px 22px; }
+  .tracker-head,.tracker-row { min-width:650px; grid-template-columns:150px repeat(7,56px); }
+  .tracker-row button { width:38px; height:38px; }
   .plans>article { padding:30px 24px; } .price strong { font-size:34px; }
   .coaches>article { display:block; } .portrait { min-height:290px; border-right:0; border-bottom:1px solid var(--line); }
   .schedule { display:block; } .days { flex-direction:row; overflow-x:auto; border-right:0; border-bottom:1px solid var(--line); } .days button { min-width:108px; grid-template-columns:1fr; gap:4px; text-align:center; border-right:1px solid var(--line); border-bottom:0; } .days button.active { box-shadow:inset 0 -3px var(--red); } .sessions { padding:22px 18px; } .session { grid-template-columns:68px 1fr 36px; } .session time { font-size:15px; } .session strong { font-size:14px; }
