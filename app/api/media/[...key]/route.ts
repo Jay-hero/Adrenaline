@@ -1,1 +1,7 @@
-import { getBucket } from "../../../../lib/content";export async function GET(_:Request,c:{params:Promise<{key:string[]}>}){const b=await getBucket();if(!b)return new Response("Not found",{status:404});const o=await b.get((await c.params).key.join("/"));if(!o)return new Response("Not found",{status:404});const h=new Headers();o.writeHttpMetadata(h);h.set("Cache-Control","public,max-age=31536000,immutable");return new Response(o.body,{headers:h});}
+import { publicClient } from "../../../../lib/supabase/server";
+export async function GET(_: Request, c: { params: Promise<{ key: string[] }> }) {
+  const key = (await c.params).key.join("/");
+  const { data, error } = await publicClient().storage.from("site-media").download(key);
+  if (error || !data) return new Response("Not found", { status: 404 });
+  return new Response(data, { headers: { "Content-Type": data.type, "Cache-Control": "public,max-age=31536000,immutable", "X-Content-Type-Options": "nosniff" } });
+}

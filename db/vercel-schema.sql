@@ -1,0 +1,14 @@
+create table public.site_admins (email text primary key);
+alter table public.site_admins enable row level security;
+grant select on public.site_admins to authenticated;
+create policy admin_self on public.site_admins for select to authenticated using (email = lower(auth.jwt()->>'email'));
+create table public.site_content (id integer primary key check (id=1), content_json jsonb not null, updated_at timestamptz not null default now(), updated_by text not null);
+alter table public.site_content enable row level security;
+grant select on public.site_content to anon, authenticated;
+grant insert, update on public.site_content to authenticated;
+create policy content_read on public.site_content for select to anon, authenticated using (true);
+create policy content_insert on public.site_content for insert to authenticated with check (exists(select 1 from public.site_admins));
+create policy content_update on public.site_content for update to authenticated using (exists(select 1 from public.site_admins)) with check (exists(select 1 from public.site_admins));
+insert into public.site_admins(email) values ('javkhlanbaataru@gmail.com');
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values ('site-media','site-media',true,4000000,array['image/jpeg','image/png','image/webp','image/gif']);
+create policy site_media_insert on storage.objects for insert to authenticated with check (bucket_id='site-media' and exists(select 1 from public.site_admins));

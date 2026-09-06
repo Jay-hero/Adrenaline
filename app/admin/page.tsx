@@ -1,3 +1,9 @@
-import { requireChatGPTUser,chatGPTSignOutPath } from "../chatgpt-auth";import { isAdmin } from "../../lib/content";import Editor from "./Editor";
-export const dynamic="force-dynamic";
-export default async function Page(){const u=await requireChatGPTUser("/admin");if(!await isAdmin(u.email))return <main className="admin-denied"><h1>Админы эрхгүй байна</h1><p>{u.email}</p></main>;return <Editor email={u.email} signout={chatGPTSignOutPath("/")}/>;}
+import { redirect } from "next/navigation";
+import { adminUser } from "../../lib/supabase/server";
+import Editor from "./Editor";
+export const dynamic = "force-dynamic";
+export default async function Page() {
+  const user = await adminUser();
+  if (!user) redirect("/login");
+  return <Editor email={user.email!} signout="/logout" />;
+}
