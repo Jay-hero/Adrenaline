@@ -14,6 +14,8 @@ export default function Login() {
     <input id="password" name="password" type="password" autoComplete="current-password" required />
     {state.error && <p role="alert">{state.error}</p>}
     <button disabled={pending} type="submit">{pending ? "Нэвтэрч байна…" : "Нэвтрэх"}</button>
+    <a href="/forgot-password">Нууц үг мартсан</a>
+    <a href="/register">Анх удаа бүртгүүлэх</a>
     <a href="/">Нүүр хуудас</a>
   </form></main>;
 }

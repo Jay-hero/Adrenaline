@@ -14,6 +14,16 @@ for (const path of images) {
   assert.ok((await image.arrayBuffer()).byteLength > 100);
 }
 assert.equal((await fetch(`${base}/login`)).status, 200);
+for (const path of ['/register', '/forgot-password', '/auth/error']) {
+  assert.equal((await fetch(`${base}${path}`)).status, 200);
+}
+const reset = await fetch(`${base}/reset-password`, { redirect: 'manual' });
+assert.equal(reset.status, 307);
+assert.match(reset.headers.get('location'), /\/forgot-password$/);
+const callback = await fetch(`${base}/auth/callback?next=https://example.com`, { redirect: 'manual' });
+assert.equal(callback.status, 307);
+assert.equal(new URL(callback.headers.get('location')).pathname, '/auth/error');
+assert.equal(new URL(callback.headers.get('location')).origin, new URL(base).origin);
 const admin = await fetch(`${base}/admin`, { redirect: 'manual' });
 assert.equal(admin.status, 307);
 assert.match(admin.headers.get('location'), /\/login$/);

@@ -12,7 +12,14 @@ The original Sites deployment remains a separate deployment.
 
 ## Administrator setup
 
-In Supabase Authentication > Users, create the user `javkhlanbaataru@gmail.com` with a private password and confirm the email. Sign in at `/login`. Only an authenticated user whose email is in `site_admins` can edit content or upload images. Manage that allowlist through the Supabase dashboard, not the public API.
+Sign in at `/login`. The approved administrator can create an account at `/register`, confirm the email in the same browser, and then edit content at `/admin`. Forgotten passwords use `/forgot-password` and `/reset-password`. Only an authenticated user whose email is in `site_admins` can edit content or upload images. Manage that allowlist through the Supabase dashboard, not the public API.
+
+Supabase Authentication > URL Configuration must set Site URL to `https://adrenaline-gilt.vercel.app` and allow these exact redirect URLs:
+
+- `https://adrenaline-gilt.vercel.app/auth/callback?next=/admin`
+- `https://adrenaline-gilt.vercel.app/auth/callback?next=/reset-password`
+
+Keep email confirmation enabled. Email flows target the production domain; initiate them there so the PKCE cookie and callback share an origin. Actual email delivery requires working Supabase email configuration and has not been verified without the administrator completing the flow.
 
 ## Payments
 
