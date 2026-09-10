@@ -12,12 +12,21 @@ import {
 import DesignEditor from "./DesignEditor";
 import { normalizeDesign } from "../../lib/design";
 import { moveActiveItem } from "../../lib/cms-layout";
-type Tab = "home" | "info" | "plans" | "coaches" | "schedule" | "pages" | "design";
+type Tab =
+  | "home"
+  | "info"
+  | "plans"
+  | "payment"
+  | "coaches"
+  | "schedule"
+  | "pages"
+  | "design";
 const menu: [Tab, string][] = [
   ["design", "Харагдах байдал / секц"],
   ["home", "Нүүр хуудас"],
   ["info", "Холбоо"],
   ["plans", "Гишүүнчлэл"],
+  ["payment", "Төлбөр"],
   ["coaches", "Дасгалжуулагч"],
   ["schedule", "Хуваарь"],
   ["pages", "Хуудас"],
@@ -271,6 +280,19 @@ export default function Editor({ email, signout }: { email: string; signout: str
                 </Card>
               ))}
             </>
+          )}
+          {tab === "payment" && (
+            <PaymentEditor
+              payment={c.home.payment}
+              plans={c.membershipPlans}
+              changePayment={(key, value) =>
+                setC({
+                  ...c,
+                  home: { ...c.home, payment: { ...c.home.payment, [key]: value } },
+                })
+              }
+              changePlan={plan}
+            />
           )}
           {tab === "coaches" && (
             <>
@@ -746,12 +768,6 @@ function HomeEditor({ home, change }: { home: HomeContent; change: (h: HomeConte
         fields={["copyright", "backToTop", "adminLabel"]}
         change={(k, v) => group("footer", k, v)}
       />
-      <SectionEditor
-        title="QPay цонхны бүх текст"
-        data={home.payment}
-        fields={Object.keys(home.payment)}
-        change={(k, v) => group("payment", k, v)}
-      />
     </div>
   );
   function values(i: number, p: Partial<HomeContent["about"]["values"][number]>) {
@@ -760,6 +776,71 @@ function HomeEditor({ home, change }: { home: HomeContent; change: (h: HomeConte
       values: home.about.values.map((x, n) => (n === i ? { ...x, ...p } : x)),
     });
   }
+}
+function PaymentEditor({
+  payment,
+  plans,
+  changePayment,
+  changePlan,
+}: {
+  payment: HomeContent["payment"];
+  plans: SiteContent["membershipPlans"];
+  changePayment: (key: keyof HomeContent["payment"], value: string) => void;
+  changePlan: (index: number, patch: Partial<SiteContent["membershipPlans"][number]>) => void;
+}) {
+  return (
+    <div className="payment-editor">
+      <Card title="Багцын төлбөрийн мэдээлэл">
+        <p className="admin-card-note">
+          Энд өөрчилсөн үнэ төлбөрийн цонх болон нүүр хуудасны гишүүнчлэлийн картанд зэрэг
+          шинэчлэгдэнэ.
+        </p>
+        <div className="payment-plan-list">
+          {plans.map((item, index) => (
+            <section key={item.id} className="payment-plan-row">
+              <h3>{item.name || `Багц ${index + 1}`}</h3>
+              <div className="formgrid">
+                <Field
+                  label="Багцын нэр"
+                  value={item.name}
+                  change={(value) => changePlan(index, { name: value })}
+                />
+                <Field
+                  label="Хугацаа"
+                  value={item.duration}
+                  change={(value) => changePlan(index, { duration: value })}
+                />
+                <Field
+                  label="Үнэ (₮)"
+                  type="number"
+                  value={String(item.price)}
+                  change={(value) => changePlan(index, { price: Math.max(0, Number(value) || 0) })}
+                />
+                <Field
+                  label="Төлбөрийн тайлбар"
+                  value={item.description}
+                  change={(value) => changePlan(index, { description: value })}
+                />
+              </div>
+            </section>
+          ))}
+        </div>
+      </Card>
+      <SectionEditor
+        title="QPay төлбөрийн цонхны мэдээлэл"
+        data={payment}
+        fields={Object.keys(payment)}
+        change={(key, value) => changePayment(key as keyof HomeContent["payment"], value)}
+      />
+      <Card title="QPay холболтын хамгаалалт">
+        <p className="admin-card-note">
+          Merchant username, password, invoice code зэрэг нууц мэдээлэл энэ админ хэсэгт
+          харагдахгүй, хадгалагдахгүй. Энд зөвхөн хэрэглэгчид харагдах үнэ болон тайлбаруудыг
+          шинэчилнэ.
+        </p>
+      </Card>
+    </div>
+  );
 }
 function SectionEditor({
   title,
