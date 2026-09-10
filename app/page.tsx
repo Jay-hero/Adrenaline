@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { defaultContent, type MembershipPlan, type SiteContent } from "./site-data";
+import SiteCanvas from "./SiteCanvas";
+import { normalizeDesign } from "../lib/design";
 
 type Payment = {
   invoiceId: string;
@@ -27,23 +29,54 @@ export default function Home() {
   const [day, setDay] = useState(0);
   const [plan, setPlan] = useState<MembershipPlan | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
-  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "checking" | "paid" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "ready" | "checking" | "paid" | "error"
+  >("idle");
   const [message, setMessage] = useState("");
   const [habits, setHabits] = useState<HabitState>({});
-  const [content,setContent]=useState<SiteContent>(defaultContent);
-  const {coaches,membershipPlans,schedule,siteInfo}=content;
-  const h=content.home;
-  useEffect(()=>{if(new URLSearchParams(location.search).has("visual-editor"))return;fetch("/api/content",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(setContent).catch(()=>{})},[]);
-  useEffect(()=>{
-    const visual=new URLSearchParams(location.search).has("visual-editor");
-    if(!visual)return;
+  const [content, setContent] = useState<SiteContent>(defaultContent);
+  const { coaches, membershipPlans, schedule, siteInfo } = content;
+  const h = content.home;
+  const design = normalizeDesign(content.design);
+  const visible = (id: string) => !design.hidden.includes(id as (typeof design.hidden)[number]);
+  useEffect(() => {
+    if (new URLSearchParams(location.search).has("visual-editor")) return;
+    fetch("/api/content", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setContent)
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    const visual = new URLSearchParams(location.search).has("visual-editor");
+    if (!visual) return;
     document.documentElement.classList.add("visual-editor-page");
-    const receive=(event:MessageEvent)=>{if(event.origin===location.origin&&event.data?.type==="ADRENALINE_PREVIEW_CONTENT")setContent(event.data.content)};
-    const pick=(event:MouseEvent)=>{const el=(event.target as HTMLElement).closest<HTMLElement>("[data-edit-section]");if(!el)return;event.preventDefault();event.stopPropagation();parent.postMessage({type:"ADRENALINE_PICK_SECTION",section:el.dataset.editSection,label:el.dataset.editLabel},location.origin)};
-    window.addEventListener("message",receive);document.addEventListener("click",pick,true);
-    parent.postMessage({type:"ADRENALINE_PREVIEW_READY"},location.origin);
-    return()=>{window.removeEventListener("message",receive);document.removeEventListener("click",pick,true);document.documentElement.classList.remove("visual-editor-page")};
-  },[]);
+    const receive = (event: MessageEvent) => {
+      if (event.origin === location.origin && event.source === parent && event.data?.type === "ADRENALINE_PREVIEW_CONTENT")
+        setContent(event.data.content);
+    };
+    const pick = (event: MouseEvent) => {
+      const el = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-section]");
+      if (!el) return;
+      event.preventDefault();
+      event.stopPropagation();
+      parent.postMessage(
+        {
+          type: "ADRENALINE_PICK_SECTION",
+          section: el.dataset.editSection,
+          label: el.dataset.editLabel,
+        },
+        location.origin,
+      );
+    };
+    window.addEventListener("message", receive);
+    document.addEventListener("click", pick, true);
+    parent.postMessage({ type: "ADRENALINE_PREVIEW_READY" }, location.origin);
+    return () => {
+      window.removeEventListener("message", receive);
+      document.removeEventListener("click", pick, true);
+      document.documentElement.classList.remove("visual-editor-page");
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -107,7 +140,9 @@ export default function Home() {
       const result = (await response.json()) as { paid?: boolean; error?: string };
       if (!response.ok) throw new Error(result.error || "Төлбөр шалгаж чадсангүй.");
       setStatus(result.paid ? "paid" : "ready");
-      setMessage(result.paid ? "Төлбөр амжилттай баталгаажлаа." : "Төлбөр хараахан баталгаажаагүй байна.");
+      setMessage(
+        result.paid ? "Төлбөр амжилттай баталгаажлаа." : "Төлбөр хараахан баталгаажаагүй байна.",
+      );
     } catch (error) {
       setStatus("ready");
       setMessage(error instanceof Error ? error.message : "Төлбөр шалгаж чадсангүй.");
@@ -135,65 +170,166 @@ export default function Home() {
   }
 
   return (
-    <main>
+    <SiteCanvas design={content.design}>
       <header data-edit-section="home" data-edit-label="Толгой хэсэг ба цэс">
-        <a className="brand" href="#home">
+        <a className="brand" href="#top">
           <img src="/adrenaline-logo.jpg" alt="" />
-          <span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span>
+          <span>
+            <strong>{h.brandTitle}</strong>
+            <small>{h.brandSubtitle}</small>
+          </span>
         </a>
         <nav className={menu ? "open" : ""}>
-          {[["about", h.nav.about], ["tracker", "Habit"], ["membership", h.nav.membership], ["coaches", h.nav.coaches], ["schedule", h.nav.schedule], ["contact", h.nav.contact]].map(([id, label]) => (
-            <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>{label}</a>
-          ))}
-          {content.pages.filter((item) => item.status === "published" && item.showInNav).map((item) => <a href={`/${item.slug}`} key={item.id}>{item.title}</a>)}
+          {[
+            ["about", h.nav.about],
+            ["tracker", "Habit"],
+            ["membership", h.nav.membership],
+            ["coaches", h.nav.coaches],
+            ["schedule", h.nav.schedule],
+            ["contact", h.nav.contact],
+          ]
+            .filter(([id]) => visible(id))
+            .map(([id, label]) => (
+              <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>
+                {label}
+              </a>
+            ))}
+          {content.pages
+            .filter((item) => !item.deleted && item.status === "published" && item.showInNav)
+            .map((item) => (
+              <a href={`/${item.slug}`} key={item.id}>
+                {item.title}
+              </a>
+            ))}
         </nav>
-        <a className="top-cta" href="#membership">{h.topCta}</a>
-        <button className="menu" type="button" aria-label="Цэс" aria-expanded={menu} onClick={() => setMenu(!menu)}><i /><i /></button>
+        {visible("membership") && (
+          <a className="top-cta" href="#membership">
+            {h.topCta}
+          </a>
+        )}
+        <button
+          className="menu"
+          type="button"
+          aria-label="Цэс"
+          aria-expanded={menu}
+          onClick={() => setMenu(!menu)}
+        >
+          <i />
+          <i />
+        </button>
       </header>
 
-      <section className="hero" id="home" data-edit-section="home" data-edit-label="Hero хэсэг">
+      <section
+        data-layout-section="home"
+        className="hero"
+        id="home"
+        data-edit-section="home"
+        data-edit-label="Hero хэсэг"
+      >
         <div className="grid-lines" />
         <div className="hero-copy">
-          <span className="kicker"><i /> {h.hero.kicker}</span>
-          <h1>{h.hero.title}<br /><em>{h.hero.accent}</em></h1>
+          <span className="kicker">
+            <i /> {h.hero.kicker}
+          </span>
+          <h1>
+            {h.hero.title}
+            <br />
+            <em>{h.hero.accent}</em>
+          </h1>
           <p>{h.hero.copy}</p>
           <div className="actions">
-            <a className="btn primary" href="#membership">{h.hero.primaryCta}</a>
-            <a className="btn ghost" href="#schedule">{h.hero.secondaryCta}</a>
+            {visible("membership") && (
+              <a className="btn primary" href="#membership">
+                {h.hero.primaryCta}
+              </a>
+            )}
+            {visible("schedule") && (
+              <a className="btn ghost" href="#schedule">
+                {h.hero.secondaryCta}
+              </a>
+            )}
           </div>
         </div>
         <div className="emblem" aria-hidden="true">
-          <div className="orbit one" /><div className="orbit two" />
+          <div className="orbit one" />
+          <div className="orbit two" />
           <img src="/adrenaline-logo.jpg" alt="" />
           <span>{h.hero.orbitText}</span>
         </div>
       </section>
 
-      <section className="stats" data-edit-section="home" data-edit-label="Статистик">
+      <section
+        data-layout-section="stats"
+        className="stats"
+        data-edit-section="home"
+        data-edit-label="Статистик"
+      >
         {h.stats.map((item, i) => (
-          <div key={item.id}><small>0{i + 1}</small><strong>{item.value}</strong><span>{item.label}</span></div>
+          <div key={item.id}>
+            <small>0{i + 1}</small>
+            <strong>{item.value}</strong>
+            <span>{item.label}</span>
+          </div>
         ))}
       </section>
 
-      <section className="section habit-tracker" id="tracker" data-edit-section="home" data-edit-label="Habit tracker">
-        <Title number="01" label="HABIT TRACKER" title={<>7 DAYS.<br /><em>ONE DISCIPLINE.</em></>} copy="Track workouts, water, steps, protein, and sleep for the week. Your progress stays saved on this device." />
+      <section
+        data-layout-section="tracker"
+        className="section habit-tracker"
+        id="tracker"
+        data-edit-section="home"
+        data-edit-label="Habit tracker"
+      >
+        <Title
+          number="01"
+          label="HABIT TRACKER"
+          title={
+            <>
+              7 DAYS.
+              <br />
+              <em>ONE DISCIPLINE.</em>
+            </>
+          }
+          copy="Track workouts, water, steps, protein, and sleep for the week. Your progress stays saved on this device."
+        />
         <div className="tracker-shell">
           <div className="tracker-summary">
             <span className="section-kicker">THIS WEEK</span>
             <strong>{progress}%</strong>
-            <p>{completedHabits} / {totalHabits} habits complete. Strongest day: {bestDay.day}</p>
-            <div className="tracker-bar" aria-label={`${progress}% complete`}><span style={{ width: `${progress}%` }} /></div>
-            <button className="btn ghost" type="button" onClick={resetHabits}>RESET WEEK</button>
+            <p>
+              {completedHabits} / {totalHabits} habits complete. Strongest day: {bestDay.day}
+            </p>
+            <div className="tracker-bar" aria-label={`${progress}% complete`}>
+              <span style={{ width: `${progress}%` }} />
+            </div>
+            <button className="btn ghost" type="button" onClick={resetHabits}>
+              RESET WEEK
+            </button>
           </div>
           <div className="tracker-board" aria-label="Weekly habit tracker">
-            <div className="tracker-head"><span>Habit</span>{trackerDays.map((dayName) => <span key={dayName}>{dayName}</span>)}</div>
+            <div className="tracker-head">
+              <span>Habit</span>
+              {trackerDays.map((dayName) => (
+                <span key={dayName}>{dayName}</span>
+              ))}
+            </div>
             {habitList.map((habit) => (
               <div className="tracker-row" key={habit.id}>
-                <div><strong>{habit.label}</strong><small>{habit.target}</small></div>
+                <div>
+                  <strong>{habit.label}</strong>
+                  <small>{habit.target}</small>
+                </div>
                 {trackerDays.map((dayName) => {
                   const key = `${habit.id}-${dayName}`;
                   return (
-                    <button className={habits[key] ? "done" : ""} type="button" key={key} aria-pressed={!!habits[key]} aria-label={`${habit.label} ${dayName}`} onClick={() => toggleHabit(habit.id, dayName)}>
+                    <button
+                      className={habits[key] ? "done" : ""}
+                      type="button"
+                      key={key}
+                      aria-pressed={!!habits[key]}
+                      aria-label={`${habit.label} ${dayName}`}
+                      onClick={() => toggleHabit(habit.id, dayName)}
+                    >
                       <span />
                     </button>
                   );
@@ -204,78 +340,374 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section about" id="about" data-edit-section="home" data-edit-label="Бидний тухай">
-        <Title number="02" label={h.about.label} title={<>{h.about.title}<br /><em>{h.about.accent}</em></>} copy={h.about.copy} />
+      <section
+        data-layout-section="about"
+        className="section about"
+        id="about"
+        data-edit-section="home"
+        data-edit-label="Бидний тухай"
+      >
+        <Title
+          number="02"
+          label={h.about.label}
+          title={
+            <>
+              {h.about.title}
+              <br />
+              <em>{h.about.accent}</em>
+            </>
+          }
+          copy={h.about.copy}
+        />
         <div className="values">
           {h.about.values.map((item, i) => (
-            <article key={item.id}><small>A / 0{i + 1}</small><b aria-hidden="true">{item.symbol}</b><h3>{item.title}</h3><p>{item.copy}</p></article>
+            <article key={item.id}>
+              <small>A / 0{i + 1}</small>
+              <b aria-hidden="true">{item.symbol}</b>
+              <h3>{item.title}</h3>
+              <p>{item.copy}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      <section className="section memberships" id="membership" data-edit-section="membership" data-edit-label="Гишүүнчлэл">
-        <Title number="03" label={h.membership.label} title={<>{h.membership.title}<br /><em>{h.membership.accent}</em></>} copy={h.membership.copy} />
+      <section
+        data-layout-section="membership"
+        className="section memberships"
+        id="membership"
+        data-edit-section="membership"
+        data-edit-label="Гишүүнчлэл"
+      >
+        <Title
+          number="03"
+          label={h.membership.label}
+          title={
+            <>
+              {h.membership.title}
+              <br />
+              <em>{h.membership.accent}</em>
+            </>
+          }
+          copy={h.membership.copy}
+        />
         <div className="plans">
           {membershipPlans.map((item) => (
             <article className={item.featured ? "featured" : ""} key={item.id}>
               {item.featured && <span className="badge">{h.membership.badge}</span>}
-              <small>{item.duration}</small><h3>{item.name}</h3><p>{item.description}</p>
-              <div className="price"><strong>{money.format(item.price)}₮</strong><span>{h.membership.priceSuffix}</span></div>
-              <ul>{item.features.map((feature) => <li key={feature}>✓ {feature}</li>)}</ul>
-              <button className={`btn ${item.featured ? "primary" : "ghost"}`} type="button" onClick={() => setPlan(item)}>{h.membership.button}</button>
+              <small>{item.duration}</small>
+              <h3>{item.name}</h3>
+              <p>{item.description}</p>
+              <div className="price">
+                <strong>{money.format(item.price)}₮</strong>
+                <span>{h.membership.priceSuffix}</span>
+              </div>
+              <ul>
+                {item.features.map((feature) => (
+                  <li key={feature}>✓ {feature}</li>
+                ))}
+              </ul>
+              <button
+                className={`btn ${item.featured ? "primary" : "ghost"}`}
+                type="button"
+                onClick={() => setPlan(item)}
+              >
+                {h.membership.button}
+              </button>
             </article>
           ))}
         </div>
         <p className="note">{h.membership.note}</p>
       </section>
 
-      <section className="section coach-section" id="coaches" data-edit-section="coaches" data-edit-label="Дасгалжуулагч">
-        <Title number="04" label={h.coachSection.label} title={<>{h.coachSection.title}<br /><em>{h.coachSection.accent}</em></>} copy={h.coachSection.copy} />
+      <section
+        data-layout-section="coaches"
+        className="section coach-section"
+        id="coaches"
+        data-edit-section="coaches"
+        data-edit-label="Дасгалжуулагч"
+      >
+        <Title
+          number="04"
+          label={h.coachSection.label}
+          title={
+            <>
+              {h.coachSection.title}
+              <br />
+              <em>{h.coachSection.accent}</em>
+            </>
+          }
+          copy={h.coachSection.copy}
+        />
         <div className="coaches">
           {coaches.map((coach, i) => (
             <article key={coach.id || coach.role}>
-              <div className={`portrait ${coach.image?"has-image":""}`}>{coach.image?<img src={coach.image} alt={coach.name || coach.role}/>:<span>{coach.code}</span>}<small>0{i + 1}</small></div>
-              <div className="coach-copy"><small>{coach.focus}</small><h3>{coach.name || coach.role}</h3>{coach.name&&<b>{coach.role}</b>}<p>{coach.copy}</p></div>
+              <div className={`portrait ${coach.image ? "has-image" : ""}`}>
+                {coach.image ? (
+                  <img src={coach.image} alt={coach.name || coach.role} />
+                ) : (
+                  <span>{coach.code}</span>
+                )}
+                <small>0{i + 1}</small>
+              </div>
+              <div className="coach-copy">
+                <small>{coach.focus}</small>
+                <h3>{coach.name || coach.role}</h3>
+                {coach.name && <b>{coach.role}</b>}
+                <p>{coach.copy}</p>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="section timetable" id="schedule" data-edit-section="schedule" data-edit-label="Цагийн хуваарь">
-        <Title number="05" label={h.timetable.label} title={<>{h.timetable.title}<br /><em>{h.timetable.accent}</em></>} copy={h.timetable.copy} />
+      <section
+        data-layout-section="schedule"
+        className="section timetable"
+        id="schedule"
+        data-edit-section="schedule"
+        data-edit-label="Цагийн хуваарь"
+      >
+        <Title
+          number="05"
+          label={h.timetable.label}
+          title={
+            <>
+              {h.timetable.title}
+              <br />
+              <em>{h.timetable.accent}</em>
+            </>
+          }
+          copy={h.timetable.copy}
+        />
         <div className="schedule">
-          <div className="days" role="tablist">{schedule.map((item, i) => <button className={day === i ? "active" : ""} role="tab" aria-selected={day === i} type="button" key={item.day} onClick={() => setDay(i)}><small>0{i + 1}</small>{item.day}</button>)}</div>
+          <div className="days" role="tablist">
+            {schedule.map((item, i) => (
+              <button
+                className={day === i ? "active" : ""}
+                role="tab"
+                aria-selected={day === i}
+                type="button"
+                key={item.day}
+                onClick={() => setDay(i)}
+              >
+                <small>0{i + 1}</small>
+                {item.day}
+              </button>
+            ))}
+          </div>
           <div className="sessions" role="tabpanel">
-            <div className="session-title"><strong>{schedule[day].day}</strong><span>{schedule[day].sessions.length} {h.timetable.countSuffix}</span></div>
-            {schedule[day].sessions.map(([time, title]) => <div className="session" key={`${time}-${title}`}><time>{time}</time><strong>{title}</strong><a href="#contact">↗</a></div>)}
+            <div className="session-title">
+              <strong>{(schedule[day]||schedule[0])?.day || 'Хуваарь оруулаагүй'}</strong>
+              <span>
+                {(schedule[day]||schedule[0])?.sessions.length || 0} {h.timetable.countSuffix}
+              </span>
+            </div>
+            {((schedule[day]||schedule[0])?.sessions || []).map(([time, title]) => (
+              <div className="session" key={`${time}-${title}`}>
+                <time>{time}</time>
+                <strong>{title}</strong>
+                <a href="#contact">↗</a>
+              </div>
+            ))}
           </div>
         </div>
         <p className="note">{h.timetable.note}</p>
       </section>
 
-      <section className="section contact" id="contact" data-edit-section="contact" data-edit-label="Холбоо барих">
+      <section
+        data-layout-section="contact"
+        className="section contact"
+        id="contact"
+        data-edit-section="contact"
+        data-edit-label="Холбоо барих"
+      >
         <div className="contact-copy">
           <span className="section-kicker">06 · {h.contact.label}</span>
-          <h2>{h.contact.title}<br /><em>{h.contact.accent}</em></h2>
+          <h2>
+            {h.contact.title}
+            <br />
+            <em>{h.contact.accent}</em>
+          </h2>
           <p>{h.contact.copy}</p>
-          <div className="contact-list"><a href={`tel:${siteInfo.phone}`}><small>{h.contact.phoneLabel}</small><strong>{siteInfo.phone}</strong><span>↗</span></a><a href={`mailto:${siteInfo.email}`}><small>{h.contact.emailLabel}</small><strong>{siteInfo.email}</strong><span>↗</span></a><div><small>{h.contact.addressLabel}</small><strong>{siteInfo.address}</strong></div></div>
+          <div className="contact-list">
+            <a href={`tel:${siteInfo.phone}`}>
+              <small>{h.contact.phoneLabel}</small>
+              <strong>{siteInfo.phone}</strong>
+              <span>↗</span>
+            </a>
+            <a href={`mailto:${siteInfo.email}`}>
+              <small>{h.contact.emailLabel}</small>
+              <strong>{siteInfo.email}</strong>
+              <span>↗</span>
+            </a>
+            <div>
+              <small>{h.contact.addressLabel}</small>
+              <strong>{siteInfo.address}</strong>
+            </div>
+          </div>
         </div>
-        <div className="map"><div className="map-lines" /><span><img src="/adrenaline-logo.jpg" alt="" /></span><footer><div><small>{h.contact.mapEyebrow}</small><strong>{h.contact.mapButton}</strong></div><a href={siteInfo.mapUrl||"#contact"} target={siteInfo.mapUrl?"_blank":undefined}>↗</a></footer></div>
+        <div className="map">
+          <div className="map-lines" />
+          <span>
+            <img src="/adrenaline-logo.jpg" alt="" />
+          </span>
+          <footer>
+            <div>
+              <small>{h.contact.mapEyebrow}</small>
+              <strong>{h.contact.mapButton}</strong>
+            </div>
+            <a href={siteInfo.mapUrl || "#contact"} target={siteInfo.mapUrl ? "_blank" : undefined}>
+              ↗
+            </a>
+          </footer>
+        </div>
       </section>
 
-      <section className="final" data-edit-section="home" data-edit-label="Доод уриалга"><span>{h.finalCta.eyebrow}</span><h2>{h.finalCta.title}<br />{h.finalCta.accent}</h2><a className="btn primary" href="#membership">{h.finalCta.button}</a></section>
-      <footer className="site-footer" data-edit-section="home" data-edit-label="Footer"><div className="brand"><img src="/adrenaline-logo.jpg" alt="" /><span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span></div><p>© {new Date().getFullYear()} {h.footer.copyright} · <a href="/admin">{h.footer.adminLabel}</a></p><a href="#home">{h.footer.backToTop}</a></footer>
-      <a className="sticky" href="#membership">{h.finalCta.button}</a>
+      <section
+        data-layout-section="final"
+        className="final"
+        data-edit-section="home"
+        data-edit-label="Доод уриалга"
+      >
+        <span>{h.finalCta.eyebrow}</span>
+        <h2>
+          {h.finalCta.title}
+          <br />
+          {h.finalCta.accent}
+        </h2>
+        {visible("membership") && (
+          <a className="btn primary" href="#membership">
+            {h.finalCta.button}
+          </a>
+        )}
+      </section>
+      <footer className="site-footer" data-edit-section="home" data-edit-label="Footer">
+        <div className="brand">
+          <img src="/adrenaline-logo.jpg" alt="" />
+          <span>
+            <strong>{h.brandTitle}</strong>
+            <small>{h.brandSubtitle}</small>
+          </span>
+        </div>
+        <p>
+          © {new Date().getFullYear()} {h.footer.copyright} ·{" "}
+          <a href="/admin">{h.footer.adminLabel}</a>
+        </p>
+        <a href="#top">{h.footer.backToTop}</a>
+      </footer>
+      {design.stickyCta && visible("membership") && (
+        <a className="sticky" href="#membership">
+          {h.finalCta.button}
+        </a>
+      )}
 
-      {plan && <div className="backdrop" onMouseDown={closeCheckout}><section className="modal" role="dialog" aria-modal="true" aria-label="QPay төлбөр" onMouseDown={(event) => event.stopPropagation()}><button className="close" type="button" onClick={closeCheckout}>×</button><span className="section-kicker">{h.payment.label}</span><h2>{plan.name}</h2><div className="summary"><span>{plan.duration}</span><strong>{money.format(plan.price)}₮</strong></div>
-        {(status === "idle" || status === "loading") && <><p>{h.payment.intro}</p><button className="btn primary" type="button" disabled={status === "loading"} onClick={createInvoice}>{status === "loading" ? h.payment.creating : h.payment.createButton}</button></>}
-        {status === "error" && <div className="error"><strong>{h.payment.pendingTitle}</strong><p>{message}</p><p>{h.payment.pendingCopy}</p><a className="btn ghost" href={`tel:${siteInfo.phone}`}>{h.payment.phoneButton}</a></div>}
-        {payment && ["ready", "checking", "paid"].includes(status) && <div className="pay-ready">{payment.qrImage && <img className="qr" src={payment.qrImage.startsWith("data:") ? payment.qrImage : `data:image/png;base64,${payment.qrImage}`} alt="QPay QR" />}<p>{h.payment.qrCopy}</p>{payment.shortUrl && <a className="btn primary" href={payment.shortUrl} target="_blank" rel="noreferrer">{h.payment.openButton}</a>}<button className="check" type="button" disabled={status === "checking" || status === "paid"} onClick={checkPayment}>{status === "paid" ? h.payment.paid : status === "checking" ? h.payment.checking : h.payment.checkButton}</button>{message && <small>{message}</small>}</div>}
-      </section></div>}
-    </main>
+      {plan && (
+        <div className="backdrop" onMouseDown={closeCheckout}>
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="QPay төлбөр"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button className="close" type="button" onClick={closeCheckout}>
+              ×
+            </button>
+            <span className="section-kicker">{h.payment.label}</span>
+            <h2>{plan.name}</h2>
+            <div className="summary">
+              <span>{plan.duration}</span>
+              <strong>{money.format(plan.price)}₮</strong>
+            </div>
+            {(status === "idle" || status === "loading") && (
+              <>
+                <p>{h.payment.intro}</p>
+                <button
+                  className="btn primary"
+                  type="button"
+                  disabled={status === "loading"}
+                  onClick={createInvoice}
+                >
+                  {status === "loading" ? h.payment.creating : h.payment.createButton}
+                </button>
+              </>
+            )}
+            {status === "error" && (
+              <div className="error">
+                <strong>{h.payment.pendingTitle}</strong>
+                <p>{message}</p>
+                <p>{h.payment.pendingCopy}</p>
+                <a className="btn ghost" href={`tel:${siteInfo.phone}`}>
+                  {h.payment.phoneButton}
+                </a>
+              </div>
+            )}
+            {payment && ["ready", "checking", "paid"].includes(status) && (
+              <div className="pay-ready">
+                {payment.qrImage && (
+                  <img
+                    className="qr"
+                    src={
+                      payment.qrImage.startsWith("data:")
+                        ? payment.qrImage
+                        : `data:image/png;base64,${payment.qrImage}`
+                    }
+                    alt="QPay QR"
+                  />
+                )}
+                <p>{h.payment.qrCopy}</p>
+                {payment.shortUrl && (
+                  <a
+                    className="btn primary"
+                    href={payment.shortUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {h.payment.openButton}
+                  </a>
+                )}
+                <button
+                  className="check"
+                  type="button"
+                  disabled={status === "checking" || status === "paid"}
+                  onClick={checkPayment}
+                >
+                  {status === "paid"
+                    ? h.payment.paid
+                    : status === "checking"
+                      ? h.payment.checking
+                      : h.payment.checkButton}
+                </button>
+                {message && <small>{message}</small>}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+    </SiteCanvas>
   );
 }
 
-function Title({ number, label, title, copy }: { number: string; label: string; title: React.ReactNode; copy: string }) {
-  return <div className="title"><div><span className="section-kicker">{number} · {label}</span><h2>{title}</h2></div><p>{copy}</p></div>;
+function Title({
+  number,
+  label,
+  title,
+  copy,
+}: {
+  number: string;
+  label: string;
+  title: React.ReactNode;
+  copy: string;
+}) {
+  return (
+    <div className="title">
+      <div>
+        <span className="section-kicker">
+          {number} · {label}
+        </span>
+        <h2>{title}</h2>
+      </div>
+      <p>{copy}</p>
+    </div>
+  );
 }

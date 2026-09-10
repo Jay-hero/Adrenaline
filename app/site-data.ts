@@ -86,6 +86,7 @@ export const schedule = [
 ];
 
 export type SiteContent = {
+  design?: import('../lib/design').SiteDesign;
   home: HomeContent;
   siteInfo: typeof siteInfo & { mapUrl?: string; facebookUrl?: string };
   membershipPlans: MembershipPlan[];
@@ -93,8 +94,33 @@ export type SiteContent = {
   schedule: typeof schedule;
   pages: CmsPage[];
 };
-export type CmsBlock = { id: string; type: "heading" | "text" | "image" | "cta"; title?: string; body?: string; image?: string; buttonLabel?: string; buttonUrl?: string };
-export type CmsPage = { id: string; title: string; slug: string; excerpt: string; heroImage?: string; status: "draft" | "published"; showInNav: boolean; seoTitle: string; seoDescription: string; blocks: CmsBlock[] };
+export type CmsBlock = {
+  id: string;
+  type: "heading" | "text" | "image" | "cta";
+  title?: string;
+  body?: string;
+  image?: string;
+  buttonLabel?: string;
+  buttonUrl?: string;
+  hidden?: boolean;
+  deleted?: boolean;
+  width?: "narrow" | "content" | "full";
+  align?: "left" | "center" | "right";
+  tone?: "default" | "surface" | "accent";
+};
+export type CmsPage = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  heroImage?: string;
+  status: "draft" | "published";
+  showInNav: boolean;
+  seoTitle: string;
+  seoDescription: string;
+  blocks: CmsBlock[];
+  deleted?: boolean;
+};
 export type HomeContent = {
   brandTitle:string; brandSubtitle:string; nav:{about:string;membership:string;coaches:string;schedule:string;contact:string}; topCta:string;
   hero:{kicker:string;title:string;accent:string;copy:string;primaryCta:string;secondaryCta:string;orbitText:string};

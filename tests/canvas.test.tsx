@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {renderToStaticMarkup} from 'react-dom/server';
+import SiteCanvas from '../app/SiteCanvas';
+import {normalizeDesign} from '../lib/design';
+const children=[<header key="head">HEADER</header>,<section key="home" data-layout-section="home">HERO_CONTENT</section>,<section key="stats" data-layout-section="stats">STATS_CONTENT</section>,<footer key="footer">FOOTER</footer>];
+const initial=renderToStaticMarkup(<SiteCanvas>{children}</SiteCanvas>);
+assert.ok(initial.indexOf('HERO_CONTENT')<initial.indexOf('STATS_CONTENT'));
+assert.ok(!initial.includes('--red'));
+const reordered=renderToStaticMarkup(<SiteCanvas design={normalizeDesign({order:['stats','home']})}>{children}</SiteCanvas>);
+assert.ok(reordered.indexOf('STATS_CONTENT')<reordered.indexOf('HERO_CONTENT'));
+const hidden=renderToStaticMarkup(<SiteCanvas design={normalizeDesign({hidden:['home']})}>{children}</SiteCanvas>);
+assert.ok(!hidden.includes('HERO_CONTENT'));assert.ok(hidden.includes('STATS_CONTENT'));assert.ok(hidden.includes('HEADER'));assert.ok(hidden.includes('FOOTER'));
+console.log('PASS: actual rendered section removal, ordering, header/footer preservation and unchanged legacy styling.');
