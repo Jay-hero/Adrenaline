@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Adrenaline Fitness Sport Center",
   description:
-    "Adrenaline Fitness Sport Center-ийн гишүүнчлэл, дасгалжуулагч, хичээлийн хуваарь, байршил болон холбоо барих мэдээлэл.",
+    "Adrenaline Fitness — заалны бодит зураг, гишүүнчлэлийн үнэ, дасгалжуулагч, Google Maps байршил. Баянгол дүүрэг, 17-р хороо. 9917-0917.",
   other: {
     "codex-preview": "development",
   },

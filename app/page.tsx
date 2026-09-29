@@ -1,713 +1,133 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { defaultContent, type MembershipPlan, type SiteContent } from "./site-data";
-import SiteCanvas from "./SiteCanvas";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import type { SiteContent } from "./site-data";
+import published from "./published-content.json";
 import { normalizeDesign } from "../lib/design";
-
-type Payment = {
-  invoiceId: string;
-  qrImage?: string;
-  shortUrl?: string;
-  bankUrls?: Array<{ name: string; logo?: string; link: string }>;
-};
+import s from "./home.module.css";
 
 const money = new Intl.NumberFormat("mn-MN");
-const trackerDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const habitList = [
-  { id: "workout", label: "Workout", target: "45 min" },
-  { id: "water", label: "Water", target: "2 L" },
-  { id: "steps", label: "Steps", target: "8k" },
-  { id: "protein", label: "Protein", target: "Daily" },
-  { id: "sleep", label: "Sleep", target: "7 h" },
-];
-
-type HabitState = Record<string, boolean>;
+const arrow = <span aria-hidden="true">↗</span>;
+const phoneLink = (phone: string) => `tel:${phone.replace(/[^+\d]/g, "")}`;
+function safeLink(url?: string) {
+  try { const parsed = new URL(url || ""); return parsed.protocol === "https:" ? parsed.href : undefined; }
+  catch { return undefined; }
+}
 
 export default function Home() {
+  const [content, setContent] = useState<SiteContent>(published as SiteContent);
+  const [offline, setOffline] = useState(false);
   const [menu, setMenu] = useState(false);
-  const [day, setDay] = useState(0);
-  const [plan, setPlan] = useState<MembershipPlan | null>(null);
-  const [payment, setPayment] = useState<Payment | null>(null);
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "ready" | "checking" | "paid" | "error"
-  >("idle");
-  const [message, setMessage] = useState("");
-  const [habits, setHabits] = useState<HabitState>({});
-  const [content, setContent] = useState<SiteContent>(defaultContent);
-  const { coaches, membershipPlans, schedule, siteInfo } = content;
-  const h = content.home;
-  const design = normalizeDesign(content.design);
-  const visible = (id: string) => !design.hidden.includes(id as (typeof design.hidden)[number]);
-  useEffect(() => {
-    if (new URLSearchParams(location.search).has("visual-editor")) return;
-    fetch("/api/content", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(setContent)
-      .catch(() => {});
-  }, []);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [photo, setPhoto] = useState<{ src: string; label: string } | null>(null);
+  const root = useRef<HTMLElement>(null);
+  const lightbox = useRef<HTMLDialogElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const trigger = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     const visual = new URLSearchParams(location.search).has("visual-editor");
-    if (!visual) return;
+    const controller = new AbortController();
+    if (!visual) {
+      fetch("/api/content", { cache: "no-store", signal: controller.signal })
+        .then(r => { if (!r.ok) throw new Error("content unavailable"); return r.json(); })
+        .then(data => { if (!data?.home || !data?.siteInfo || !Array.isArray(data.pages) || !Array.isArray(data.membershipPlans) || !Array.isArray(data.coaches)) throw new Error("invalid content"); setContent(data); })
+        .catch(error => { if (error.name !== "AbortError") setOffline(true); });
+      return () => controller.abort();
+    }
     document.documentElement.classList.add("visual-editor-page");
     const receive = (event: MessageEvent) => {
-      if (event.origin === location.origin && event.source === parent && event.data?.type === "ADRENALINE_PREVIEW_CONTENT")
-        setContent(event.data.content);
+      if (event.origin === location.origin && event.source === parent && event.data?.type === "ADRENALINE_PREVIEW_CONTENT") setContent(event.data.content);
     };
     const pick = (event: MouseEvent) => {
-      const el = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-section]");
-      if (!el) return;
-      event.preventDefault();
-      event.stopPropagation();
-      parent.postMessage(
-        {
-          type: "ADRENALINE_PICK_SECTION",
-          section: el.dataset.editSection,
-          label: el.dataset.editLabel,
-        },
-        location.origin,
-      );
+      const element = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-section]");
+      if (!element) return;
+      event.preventDefault(); event.stopPropagation();
+      parent.postMessage({ type: "ADRENALINE_PICK_SECTION", section: element.dataset.editSection, label: element.dataset.editLabel }, location.origin);
     };
     window.addEventListener("message", receive);
     document.addEventListener("click", pick, true);
     parent.postMessage({ type: "ADRENALINE_PREVIEW_READY" }, location.origin);
-    return () => {
-      window.removeEventListener("message", receive);
-      document.removeEventListener("click", pick, true);
-      document.documentElement.classList.remove("visual-editor-page");
-    };
+    return () => { window.removeEventListener("message", receive); document.removeEventListener("click", pick, true); document.documentElement.classList.remove("visual-editor-page"); };
   }, []);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("adrenaline-habit-tracker");
-      if (stored) setHabits(JSON.parse(stored));
-    } catch {}
-  }, []);
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add(s.revealed); observer.unobserve(entry.target); }
+    }), { threshold: 0.08 });
+    root.current?.querySelectorAll("[data-reveal]").forEach(element => observer.observe(element));
+    return () => observer.disconnect();
+  }, [content]);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem("adrenaline-habit-tracker", JSON.stringify(habits));
-    } catch {}
-  }, [habits]);
-
-  useEffect(() => {
-    if (!plan) return;
+    if (!photo) return;
+    const dialog = lightbox.current;
+    dialog?.showModal();
+    const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (event: KeyboardEvent) => event.key === "Escape" && closeCheckout();
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [plan]);
+    return () => { dialog?.close(); document.body.style.overflow = previous; trigger.current?.focus(); };
+  }, [photo]);
 
-  function closeCheckout() {
-    setPlan(null);
-    setPayment(null);
-    setStatus("idle");
-    setMessage("");
-  }
+  const design = normalizeDesign(content.design);
+  const h = content.home;
+  const info = content.siteInfo as SiteContent["siteInfo"] & { phone2?: string };
+  const phone = info.phone;
+  const gym = content.pages.find(page => !page.deleted && page.status === "published" && page.title.trim() === "Заал");
+  const gallery = [...new Set([gym?.heroImage, ...(gym?.blocks.filter(block => !block.hidden && !block.deleted && block.type === "image").map(block => block.image) || [])].filter((src): src is string => Boolean(src)))];
+  const labels = ["Кардио бүс", "Заалны үүд", "Хүчний бэлтгэлийн бүс"];
+  const coaches = content.coaches.filter(coach => coach.name?.trim() && coach.image);
+  const mapUrl = safeLink(info.mapUrl);
+  const query = mapUrl ? new URL(mapUrl).searchParams.get("query") || `${info.name} ${info.address}` : `${info.name} ${info.address}`;
+  const mapEmbed = info.mapUrl === published.siteInfo.mapUrl
+    ? "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2673.712252407674!2d106.89012679999999!3d47.9226049!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x5d9693b48098fc4b%3A0x7f9e146d5261093d!2sAdrenaline%20Sport%20Fitness%20Center!5e0!3m2!1sen!2smn!4v1790652581161!5m2!1sen!2smn"
+    : `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  const mapLink = mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  const facebook = safeLink(info.facebookUrl);
+  const visible = (id: "about" | "membership" | "coaches" | "contact") => !design.hidden.includes(id);
+  const links = [["about", "Заал"], ["membership", "Үнэ, багц"], ["contact", "Байршил, холбоо"]].filter(([id]) => visible(id as "about" | "membership" | "contact"));
+  const theme = { "--accent": design.accent, "--ink": design.background, "--paper": design.text, "--surface": design.surface } as CSSProperties;
 
-  async function createInvoice() {
-    if (!plan) return;
-    setStatus("loading");
-    try {
-      const response = await fetch("/api/qpay/invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: plan.id }),
-      });
-      const result = (await response.json()) as Payment & { error?: string };
-      if (!response.ok) throw new Error(result.error || "QPay нэхэмжлэх үүсгэж чадсангүй.");
-      setPayment(result);
-      setStatus("ready");
-    } catch (error) {
-      setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Төлбөрийн хүсэлт амжилтгүй боллоо.");
-    }
-  }
-
-  async function checkPayment() {
-    if (!payment) return;
-    setStatus("checking");
-    try {
-      const response = await fetch("/api/qpay/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoiceId: payment.invoiceId }),
-      });
-      const result = (await response.json()) as { paid?: boolean; error?: string };
-      if (!response.ok) throw new Error(result.error || "Төлбөр шалгаж чадсангүй.");
-      setStatus(result.paid ? "paid" : "ready");
-      setMessage(
-        result.paid ? "Төлбөр амжилттай баталгаажлаа." : "Төлбөр хараахан баталгаажаагүй байна.",
-      );
-    } catch (error) {
-      setStatus("ready");
-      setMessage(error instanceof Error ? error.message : "Төлбөр шалгаж чадсангүй.");
-    }
-  }
-
-  const completedHabits = Object.values(habits).filter(Boolean).length;
-  const totalHabits = habitList.length * trackerDays.length;
-  const progress = Math.round((completedHabits / totalHabits) * 100);
-  const bestDay = trackerDays.reduce(
-    (best, dayName) => {
-      const count = habitList.filter((habit) => habits[`${habit.id}-${dayName}`]).length;
-      return count > best.count ? { day: dayName, count } : best;
-    },
-    { day: trackerDays[0], count: 0 },
-  );
-
-  function toggleHabit(habitId: string, dayName: string) {
-    const key = `${habitId}-${dayName}`;
-    setHabits((current) => ({ ...current, [key]: !current[key] }));
-  }
-
-  function resetHabits() {
-    setHabits({});
-  }
-
-  return (
-    <SiteCanvas design={content.design}>
-      <header data-edit-section="home" data-edit-label="Толгой хэсэг ба цэс">
-        <a className="brand" href="#top">
-          <img src="/adrenaline-logo.jpg" alt="" />
-          <span>
-            <strong>{h.brandTitle}</strong>
-            <small>{h.brandSubtitle}</small>
-          </span>
-        </a>
-        <nav className={menu ? "open" : ""}>
-          {[
-            ["about", h.nav.about],
-            ["tracker", "Habit"],
-            ["membership", h.nav.membership],
-            ["coaches", h.nav.coaches],
-            ["schedule", h.nav.schedule],
-            ["contact", h.nav.contact],
-          ]
-            .filter(([id]) => visible(id))
-            .map(([id, label]) => (
-              <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>
-                {label}
-              </a>
-            ))}
-          {content.pages
-            .filter((item) => !item.deleted && item.status === "published" && item.showInNav)
-            .map((item) => (
-              <a href={`/${item.slug}`} key={item.id}>
-                {item.title}
-              </a>
-            ))}
-        </nav>
-        {visible("membership") && (
-          <a className="top-cta" href="#membership">
-            {h.topCta}
-          </a>
-        )}
-        <button
-          className="menu"
-          type="button"
-          aria-label="Цэс"
-          aria-expanded={menu}
-          onClick={() => setMenu(!menu)}
-        >
-          <i />
-          <i />
-        </button>
-      </header>
-
-      <section
-        data-layout-section="home"
-        className="hero"
-        id="home"
-        data-edit-section="home"
-        data-edit-label="Hero хэсэг"
-      >
-        <div className="grid-lines" />
-        <div className="hero-copy">
-          <span className="kicker">
-            <i /> {h.hero.kicker}
-          </span>
-          <h1>
-            {h.hero.title}
-            <br />
-            <em>{h.hero.accent}</em>
-          </h1>
-          <p>{h.hero.copy}</p>
-          <div className="actions">
-            {visible("membership") && (
-              <a className="btn primary" href="#membership">
-                {h.hero.primaryCta}
-              </a>
-            )}
-            {visible("schedule") && (
-              <a className="btn ghost" href="#schedule">
-                {h.hero.secondaryCta}
-              </a>
-            )}
-          </div>
-        </div>
-        <div className="emblem" aria-hidden="true">
-          <div className="orbit one" />
-          <div className="orbit two" />
-          <img src="/adrenaline-logo.jpg" alt="" />
-          <span>{h.hero.orbitText}</span>
-        </div>
-      </section>
-
-      <section
-        data-layout-section="stats"
-        className="stats"
-        data-edit-section="home"
-        data-edit-label="Статистик"
-      >
-        {h.stats.map((item, i) => (
-          <div key={item.id}>
-            <small>0{i + 1}</small>
-            <strong>{item.value}</strong>
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </section>
-
-      <section
-        data-layout-section="tracker"
-        className="section habit-tracker"
-        id="tracker"
-        data-edit-section="home"
-        data-edit-label="Habit tracker"
-      >
-        <Title
-          number="01"
-          label="HABIT TRACKER"
-          title={
-            <>
-              7 DAYS.
-              <br />
-              <em>ONE DISCIPLINE.</em>
-            </>
-          }
-          copy="Track workouts, water, steps, protein, and sleep for the week. Your progress stays saved on this device."
-        />
-        <div className="tracker-shell">
-          <div className="tracker-summary">
-            <span className="section-kicker">THIS WEEK</span>
-            <strong>{progress}%</strong>
-            <p>
-              {completedHabits} / {totalHabits} habits complete. Strongest day: {bestDay.day}
-            </p>
-            <div className="tracker-bar" aria-label={`${progress}% complete`}>
-              <span style={{ width: `${progress}%` }} />
-            </div>
-            <button className="btn ghost" type="button" onClick={resetHabits}>
-              RESET WEEK
-            </button>
-          </div>
-          <div className="tracker-board" aria-label="Weekly habit tracker">
-            <div className="tracker-head">
-              <span>Habit</span>
-              {trackerDays.map((dayName) => (
-                <span key={dayName}>{dayName}</span>
-              ))}
-            </div>
-            {habitList.map((habit) => (
-              <div className="tracker-row" key={habit.id}>
-                <div>
-                  <strong>{habit.label}</strong>
-                  <small>{habit.target}</small>
-                </div>
-                {trackerDays.map((dayName) => {
-                  const key = `${habit.id}-${dayName}`;
-                  return (
-                    <button
-                      className={habits[key] ? "done" : ""}
-                      type="button"
-                      key={key}
-                      aria-pressed={!!habits[key]}
-                      aria-label={`${habit.label} ${dayName}`}
-                      onClick={() => toggleHabit(habit.id, dayName)}
-                    >
-                      <span />
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section
-        data-layout-section="about"
-        className="section about"
-        id="about"
-        data-edit-section="home"
-        data-edit-label="Бидний тухай"
-      >
-        <Title
-          number="02"
-          label={h.about.label}
-          title={
-            <>
-              {h.about.title}
-              <br />
-              <em>{h.about.accent}</em>
-            </>
-          }
-          copy={h.about.copy}
-        />
-        <div className="values">
-          {h.about.values.map((item, i) => (
-            <article key={item.id}>
-              <small>A / 0{i + 1}</small>
-              <b aria-hidden="true">{item.symbol}</b>
-              <h3>{item.title}</h3>
-              <p>{item.copy}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section
-        data-layout-section="membership"
-        className="section memberships"
-        id="membership"
-        data-edit-section="membership"
-        data-edit-label="Гишүүнчлэл"
-      >
-        <Title
-          number="03"
-          label={h.membership.label}
-          title={
-            <>
-              {h.membership.title}
-              <br />
-              <em>{h.membership.accent}</em>
-            </>
-          }
-          copy={h.membership.copy}
-        />
-        <div className="plans">
-          {membershipPlans.map((item) => (
-            <article className={item.featured ? "featured" : ""} key={item.id}>
-              {item.featured && <span className="badge">{h.membership.badge}</span>}
-              <small>{item.duration}</small>
-              <h3>{item.name}</h3>
-              <p>{item.description}</p>
-              <div className="price">
-                <strong>{money.format(item.price)}₮</strong>
-                <span>{h.membership.priceSuffix}</span>
-              </div>
-              <ul>
-                {item.features.map((feature) => (
-                  <li key={feature}>✓ {feature}</li>
-                ))}
-              </ul>
-              <button
-                className={`btn ${item.featured ? "primary" : "ghost"}`}
-                type="button"
-                onClick={() => setPlan(item)}
-              >
-                {h.membership.button}
-              </button>
-            </article>
-          ))}
-        </div>
-        <p className="note">{h.membership.note}</p>
-      </section>
-
-      <section
-        data-layout-section="coaches"
-        className="section coach-section"
-        id="coaches"
-        data-edit-section="coaches"
-        data-edit-label="Дасгалжуулагч"
-      >
-        <Title
-          number="04"
-          label={h.coachSection.label}
-          title={
-            <>
-              {h.coachSection.title}
-              <br />
-              <em>{h.coachSection.accent}</em>
-            </>
-          }
-          copy={h.coachSection.copy}
-        />
-        <div className="coaches">
-          {coaches.map((coach, i) => (
-            <article key={coach.id || coach.role}>
-              <div className={`portrait ${coach.image ? "has-image" : ""}`}>
-                {coach.image ? (
-                  <img src={coach.image} alt={coach.name || coach.role} />
-                ) : (
-                  <span>{coach.code}</span>
-                )}
-                <small>0{i + 1}</small>
-              </div>
-              <div className="coach-copy">
-                <small>{coach.focus}</small>
-                <h3>{coach.name || coach.role}</h3>
-                {coach.name && <b>{coach.role}</b>}
-                <p>{coach.copy}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section
-        data-layout-section="schedule"
-        className="section timetable"
-        id="schedule"
-        data-edit-section="schedule"
-        data-edit-label="Цагийн хуваарь"
-      >
-        <Title
-          number="05"
-          label={h.timetable.label}
-          title={
-            <>
-              {h.timetable.title}
-              <br />
-              <em>{h.timetable.accent}</em>
-            </>
-          }
-          copy={h.timetable.copy}
-        />
-        <div className="schedule">
-          <div className="days" role="tablist">
-            {schedule.map((item, i) => (
-              <button
-                className={day === i ? "active" : ""}
-                role="tab"
-                aria-selected={day === i}
-                type="button"
-                key={item.day}
-                onClick={() => setDay(i)}
-              >
-                <small>0{i + 1}</small>
-                {item.day}
-              </button>
-            ))}
-          </div>
-          <div className="sessions" role="tabpanel">
-            <div className="session-title">
-              <strong>{(schedule[day]||schedule[0])?.day || 'Хуваарь оруулаагүй'}</strong>
-              <span>
-                {(schedule[day]||schedule[0])?.sessions.length || 0} {h.timetable.countSuffix}
-              </span>
-            </div>
-            {((schedule[day]||schedule[0])?.sessions || []).map(([time, title]) => (
-              <div className="session" key={`${time}-${title}`}>
-                <time>{time}</time>
-                <strong>{title}</strong>
-                <a href="#contact">↗</a>
-              </div>
-            ))}
-          </div>
-        </div>
-        <p className="note">{h.timetable.note}</p>
-      </section>
-
-      <section
-        data-layout-section="contact"
-        className="section contact"
-        id="contact"
-        data-edit-section="contact"
-        data-edit-label="Холбоо барих"
-      >
-        <div className="contact-copy">
-          <span className="section-kicker">06 · {h.contact.label}</span>
-          <h2>
-            {h.contact.title}
-            <br />
-            <em>{h.contact.accent}</em>
-          </h2>
-          <p>{h.contact.copy}</p>
-          <div className="contact-list">
-            <a href={`tel:${siteInfo.phone}`}>
-              <small>{h.contact.phoneLabel}</small>
-              <strong>{siteInfo.phone}</strong>
-              <span>↗</span>
-            </a>
-            <a href={`mailto:${siteInfo.email}`}>
-              <small>{h.contact.emailLabel}</small>
-              <strong>{siteInfo.email}</strong>
-              <span>↗</span>
-            </a>
-            <div>
-              <small>{h.contact.addressLabel}</small>
-              <strong>{siteInfo.address}</strong>
-            </div>
-          </div>
-        </div>
-        <div className="map">
-          <div className="map-lines" />
-          <span>
-            <img src="/adrenaline-logo.jpg" alt="" />
-          </span>
-          <footer>
-            <div>
-              <small>{h.contact.mapEyebrow}</small>
-              <strong>{h.contact.mapButton}</strong>
-            </div>
-            <a href={siteInfo.mapUrl || "#contact"} target={siteInfo.mapUrl ? "_blank" : undefined}>
-              ↗
-            </a>
-          </footer>
-        </div>
-      </section>
-
-      <section
-        data-layout-section="final"
-        className="final"
-        data-edit-section="home"
-        data-edit-label="Доод уриалга"
-      >
-        <span>{h.finalCta.eyebrow}</span>
-        <h2>
-          {h.finalCta.title}
-          <br />
-          {h.finalCta.accent}
-        </h2>
-        {visible("membership") && (
-          <a className="btn primary" href="#membership">
-            {h.finalCta.button}
-          </a>
-        )}
-      </section>
-      <footer className="site-footer" data-edit-section="home" data-edit-label="Footer">
-        <div className="brand">
-          <img src="/adrenaline-logo.jpg" alt="" />
-          <span>
-            <strong>{h.brandTitle}</strong>
-            <small>{h.brandSubtitle}</small>
-          </span>
-        </div>
-        <p>
-          © {new Date().getFullYear()} {h.footer.copyright} ·{" "}
-          <a href="/admin">{h.footer.adminLabel}</a>
-        </p>
-        <a href="#top">{h.footer.backToTop}</a>
-      </footer>
-      {design.stickyCta && visible("membership") && (
-        <a className="sticky" href="#membership">
-          {h.finalCta.button}
-        </a>
-      )}
-
-      {plan && (
-        <div className="backdrop" onMouseDown={closeCheckout}>
-          <section
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="QPay төлбөр"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <button className="close" type="button" onClick={closeCheckout}>
-              ×
-            </button>
-            <span className="section-kicker">{h.payment.label}</span>
-            <h2>{plan.name}</h2>
-            <div className="summary">
-              <span>{plan.duration}</span>
-              <strong>{money.format(plan.price)}₮</strong>
-            </div>
-            {(status === "idle" || status === "loading") && (
-              <>
-                <p>{h.payment.intro}</p>
-                <button
-                  className="btn primary"
-                  type="button"
-                  disabled={status === "loading"}
-                  onClick={createInvoice}
-                >
-                  {status === "loading" ? h.payment.creating : h.payment.createButton}
-                </button>
-              </>
-            )}
-            {status === "error" && (
-              <div className="error">
-                <strong>{h.payment.pendingTitle}</strong>
-                <p>{message}</p>
-                <p>{h.payment.pendingCopy}</p>
-                <a className="btn ghost" href={`tel:${siteInfo.phone}`}>
-                  {h.payment.phoneButton}
-                </a>
-              </div>
-            )}
-            {payment && ["ready", "checking", "paid"].includes(status) && (
-              <div className="pay-ready">
-                {payment.qrImage && (
-                  <img
-                    className="qr"
-                    src={
-                      payment.qrImage.startsWith("data:")
-                        ? payment.qrImage
-                        : `data:image/png;base64,${payment.qrImage}`
-                    }
-                    alt="QPay QR"
-                  />
-                )}
-                <p>{h.payment.qrCopy}</p>
-                {payment.shortUrl && (
-                  <a
-                    className="btn primary"
-                    href={payment.shortUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {h.payment.openButton}
-                  </a>
-                )}
-                <button
-                  className="check"
-                  type="button"
-                  disabled={status === "checking" || status === "paid"}
-                  onClick={checkPayment}
-                >
-                  {status === "paid"
-                    ? h.payment.paid
-                    : status === "checking"
-                      ? h.payment.checking
-                      : h.payment.checkButton}
-                </button>
-                {message && <small>{message}</small>}
-              </div>
-            )}
-          </section>
-        </div>
-      )}
-    </SiteCanvas>
-  );
-}
-
-function Title({
-  number,
-  label,
-  title,
-  copy,
-}: {
-  number: string;
-  label: string;
-  title: React.ReactNode;
-  copy: string;
-}) {
-  return (
-    <div className="title">
-      <div>
-        <span className="section-kicker">
-          {number} · {label}
-        </span>
-        <h2>{title}</h2>
+  return <main ref={root} className={s.root} style={theme} id="top">
+    <a className={s.skip} href="#about">Үндсэн мэдээлэл рүү</a>
+    <header className={s.header} data-edit-section="home" data-edit-label="Толгой хэсэг">
+      <a href="#top" className={s.brand} aria-label="Adrenaline — нүүр"><Image src="/adrenaline-logo.jpg" alt="" width={44} height={44} /><span><strong>{h.brandTitle}</strong><small>{h.brandSubtitle}</small></span></a>
+      <nav id="main-navigation" className={`${s.nav} ${menu ? s.navOpen : ""}`} aria-label="Үндсэн цэс" onKeyDown={event => { if (event.key === "Escape") { setMenu(false); menuButton.current?.focus(); } }}>
+        {links.map(([id, label]) => <a href={`#${id}`} key={id} onClick={() => setMenu(false)}>{label}</a>)}
+      </nav>
+      <a className={s.headerCall} href={phoneLink(phone)}>{phone} {arrow}</a>
+      <button ref={menuButton} className={s.menuButton} type="button" aria-label={menu ? "Цэс хаах" : "Цэс нээх"} aria-expanded={menu} aria-controls="main-navigation" onClick={() => setMenu(value => !value)}>{menu ? "✕" : "☰"}</button>
+    </header>
+    <section className={s.hero} data-edit-section="home" data-edit-label="Нүүрний танилцуулга">
+      {gallery[0] && <Image className={s.heroImage} src={gallery[0]} alt="Adrenaline фитнессийн кардио тоног төхөөрөмжтэй заал" fill sizes="100vw" preload />}
+      <div className={s.heroShade} />
+      <div className={s.heroContent}><p className={s.eyebrow}><span className={s.redDot} /> УЛААНБААТАР · ADRENALINE FITNESS</p><h1>{h.hero.title}<br /><em>{h.hero.accent}</em></h1><p className={s.heroDescription}>{h.hero.copy}</p>
+        <div className={s.actions}>{visible("membership") && <a className={s.primary} href="#membership">ҮНЭ, БАГЦ ХАРАХ {arrow}</a>}{visible("about") && <a className={s.secondary} href="#about">ЗААЛТАЙ ТАНИЛЦАХ <span aria-hidden="true">↓</span></a>}</div>
       </div>
-      <p>{copy}</p>
-    </div>
-  );
+      <div className={s.heroBottom}><span>ӨӨРИЙНХӨӨ ТӨЛӨӨ. ӨНӨӨДРӨӨС.</span><a href="#contact">{info.address} {arrow}</a></div><span className={s.heroIndex} aria-hidden="true">01 / AD</span>
+    </section>
+    {visible("about") && <section className={s.section} id="about" data-edit-section="pages" data-edit-label="Заалны зураг ба танилцуулга">
+      <div className={s.sectionHeading} data-reveal><div><p className={s.eyebrow}>01 / МАНАЙ ОРЧИН</p><h2>ТАНЫ ДАРААГИЙН<br /><span>АХИЦ ЭНДЭЭС.</span></h2></div><div className={s.sectionIntro}><p>{gym?.excerpt || h.about.copy}</p><p className={s.muted}>Тоног төхөөрөмж, орчинтойгоо зургаар танилцаарай.</p></div></div>
+      <div className={s.gallery}>{gallery.map((src, i) => <button type="button" className={s.galleryTile} key={src} onClick={event => { trigger.current = event.currentTarget; setPhoto({ src, label: labels[i] || "Заалны зураг" }); }} aria-label={`${labels[i] || "Заалны зураг"} — томруулж харах`} data-reveal>
+        <Image src={src} alt={labels[i] || "Adrenaline заалны орчин"} fill sizes={i === 0 ? "(max-width: 700px) 100vw, 60vw" : "(max-width: 700px) 50vw, 35vw"} /><span className={s.photoCaption}><span><small>0{i + 1}</small>{labels[i] || "Манай орчин"}</span><b aria-hidden="true">↗</b></span>
+      </button>)}</div>
+      {visible("coaches") && coaches.map(coach => <article key={coach.id || coach.name} className={s.coach} data-edit-section="coaches" data-edit-label="Дасгалжуулагч" data-reveal><Image src={coach.image!} alt={coach.name!} width={100} height={120} className={s.coachImage} /><div><p className={s.eyebrow}>{coach.role}</p><h3>{coach.name}</h3><p>{coach.copy}</p></div><a href={phoneLink(phone)} className={s.textLink}>Багштай бэлтгэх {arrow}</a></article>)}
+    </section>}
+    {visible("membership") && <section className={`${s.section} ${s.pricing}`} id="membership" data-edit-section="membership" data-edit-label="Үнэ ба гишүүнчлэл">
+      <div className={s.sectionHeading} data-reveal><div><p className={s.eyebrow}>02 / ҮНЭ, ГИШҮҮНЧЛЭЛ</p><h2>{h.membership.title}<br /><span>{h.membership.accent}</span></h2></div><p className={s.sectionIntro}>{h.membership.copy}</p></div>
+      {offline && <p className={s.notice} role="status">Сүүлд нийтлэгдсэн мэдээллийг харуулж байна. Одоогийн үнэ, нөхцөлийг утсаар баталгаажуулна уу.</p>}
+      <div className={s.plans}>{content.membershipPlans.map((plan, index) => <article key={plan.id} className={`${s.plan} ${plan.featured ? s.featured : ""}`} data-reveal><div className={s.planTop}><span>0{index + 1}</span>{plan.featured && <span className={s.badge}>{h.membership.badge}</span>}</div><h3>{plan.duration}</h3><p className={s.planName}>{plan.name}</p><p className={s.price}>{money.format(plan.price)}<span>₮</span></p><p className={s.planDescription}>{plan.description}</p>{plan.features.length > 0 && <ul>{plan.features.map(feature => <li key={feature}><span aria-hidden="true">✓</span>{feature}</li>)}</ul>}<a className={plan.featured ? s.primary : s.secondary} href={phoneLink(phone)} aria-label={`${plan.duration} — утсаар лавлах`}>БАГЦ ЛАВЛАХ {arrow}</a></article>)}</div>
+      <p className={s.priceNote}>{h.membership.note}</p>
+    </section>}
+    {visible("contact") && <section className={`${s.section} ${s.contact}`} id="contact" data-edit-section="contact" data-edit-label="Байршил ба холбоо">
+      <div className={s.sectionHeading} data-reveal><div><p className={s.eyebrow}>03 / БАЙРШИЛ, ХОЛБОО</p><h2>БИДЭНТЭЙ<br /><span>ЭНД УУЛЗААРАЙ.</span></h2></div><p className={s.sectionIntro}>Заалаа үзэх, багцаа сонгох, бэлтгэлээ эхлэх.<br />Бидэнтэй шууд холбогдоорой.</p></div>
+      <div className={s.contactGrid}><div className={s.contactDetails} data-reveal><span className={s.eyebrow}>ХОЛБОО БАРИХ</span><a className={s.phone} href={phoneLink(phone)}>{phone} {arrow}</a>{info.phone2 && <a className={s.phoneSecondary} href={phoneLink(info.phone2)}>{info.phone2} {arrow}</a>}<div className={s.address}><span className={s.eyebrow}>МАНАЙ ХАЯГ</span><p>{info.address}</p><a className={s.textLink} href={mapLink} target="_blank" rel="noopener noreferrer">Google Maps дээр нээх {arrow}</a></div><p className={s.muted}>Ажиллах цаг болон тухайн өдрийн мэдээллийг утсаар лавлаарай.</p><div className={s.socials}>{facebook && <a href={facebook} target="_blank" rel="noopener noreferrer">Facebook {arrow}</a>}{info.email?.trim() && <a href={`mailto:${info.email}`}>{info.email} {arrow}</a>}</div></div>
+        <div className={s.mapPanel} data-reveal><div className={s.mapView}>{!mapLoaded && <a className={s.mapFallback} href={mapLink} target="_blank" rel="noopener noreferrer"><span className={s.mapPin} aria-hidden="true">⌖</span><strong>ADRENALINE FITNESS</strong><span>{info.address}</span><b>Google Maps дээр харах ↗</b></a>}<iframe title="Adrenaline Fitness — Google Maps байршил" src={mapEmbed} loading="eager" referrerPolicy="no-referrer-when-downgrade" onLoad={() => setMapLoaded(true)} allowFullScreen /></div><div className={s.mapFooter}><span><i className={s.redDot} /> ADRENALINE FITNESS</span><a href={mapLink} target="_blank" rel="noopener noreferrer" aria-label="Google Maps дээр байршил нээх">{arrow}</a></div></div>
+      </div>
+    </section>}
+    <footer className={s.footer}><a href="#top" className={s.footerBrand}>ADRENALINE<span>FITNESS SPORT CENTER</span></a><p>© {new Date().getFullYear()} {h.footer.copyright}</p><div><Link href="/admin">Админ</Link><a href="#top">Дээш ↑</a></div></footer>
+    {design.stickyCta && <div className={s.mobileBar}><a href={phoneLink(phone)}>ЗАЛГАХ {arrow}</a><a href={mapLink} target="_blank" rel="noopener noreferrer">БАЙРШИЛ {arrow}</a></div>}
+    {photo && <dialog ref={lightbox} className={s.lightbox} onCancel={() => setPhoto(null)} onClick={event => { if (event.target === event.currentTarget) setPhoto(null); }} onClose={() => setPhoto(null)} aria-label={photo.label}><button type="button" className={s.closePhoto} onClick={() => setPhoto(null)} aria-label="Зураг хаах" autoFocus>✕</button><div className={s.lightboxImage}><Image src={photo.src} alt={photo.label} fill sizes="95vw" /></div><p>{photo.label}</p></dialog>}
+  </main>;
 }
