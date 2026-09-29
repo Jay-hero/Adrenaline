@@ -1,0 +1,264 @@
+{
+  "home": {
+    "nav": {
+      "about": "Бидний тухай",
+      "coaches": "Дасгалжуулагч",
+      "contact": "Холбоо",
+      "schedule": "Хуваарь",
+      "membership": "Гишүүнчлэл"
+    },
+    "hero": {
+      "copy": "Саруул орчин, зөв хөтөлбөр, зөв хүмүүсийн дунд өөрийн хамгийн хүчтэй хувилбарыг бүтээ.",
+      "title": "ХҮЧЭЭ СЭРЭЭ.",
+      "accent": "ХЯЗГААРАА ДАВ.",
+      "kicker": "FITNESS • STRENGTH • COMMUNITY",
+      "orbitText": "FOCUS · POWER · DISCIPLINE",
+      "primaryCta": "ГИШҮҮНЧЛЭЛ СОНГОХ ↗",
+      "secondaryCta": "ХИЧЭЭЛИЙН ХУВААРЬ"
+    },
+    "about": {
+      "copy": "Adrenaline бол зорилгоо тодорхойлж, өөрийгөө сорьж, тогтвортой ахиц гаргах хүмүүсийн орон зай.",
+      "label": "БИДНИЙ ТУХАЙ",
+      "title": "ДАСГАЛ БОЛ ЗӨВХӨН",
+      "accent": "БИЕИЙН ХӨДӨЛГӨӨН БИШ.",
+      "values": [
+        {
+          "id": "v1",
+          "copy": "Таны түвшин, боломж, зорилгод нийцсэн бодит алхмаас эхэлнэ.",
+          "title": "ЗОРИЛГОД ТӨВЛӨРНӨ",
+          "symbol": "◎"
+        },
+        {
+          "id": "v2",
+          "copy": "Мэдрэмжээс гадна ахиц, давтамж, гүйцэтгэлийг харна.",
+          "title": "АХИЦЫГ ХЭМЖИНЭ",
+          "symbol": "▥"
+        },
+        {
+          "id": "v3",
+          "copy": "Дэмждэг, урам өгдөг, тууштай байхад туслах community.",
+          "title": "ХАМТДАА ХҮЧТЭЙ",
+          "symbol": "◉"
+        }
+      ]
+    },
+    "stats": [],
+    "footer": {
+      "backToTop": "ДЭЭШ ↑",
+      "copyright": "Adrenaline Fitness",
+      "adminLabel": "ADMIN"
+    },
+    "topCta": "ЗАЛГАЖ БҮРТГҮҮЛЭХ ↗",
+    "contact": {
+      "copy": "Гишүүнчлэл, дасгалжуулагч болон хичээлийн хуваарийн талаар бидэнтэй шууд холбогдоорой.",
+      "label": "БАЙРШИЛ & ХОЛБОО",
+      "title": "ЭХНИЙ АЛХМАА",
+      "accent": "ӨНӨӨДӨР ХИЙ.",
+      "mapButton": "БАЯНГОЛ · 17-Р ХОРОО",
+      "emailLabel": "И-МЭЙЛ",
+      "mapEyebrow": "ADRENALINE FITNESS",
+      "phoneLabel": "УТАС",
+      "addressLabel": "ХАЯГ"
+    },
+    "payment": {
+      "paid": "✓ ТӨЛБӨР БАТАЛГААЖЛАА",
+      "intro": "QPay нэхэмжлэх үүсгээд банкны апп-аар төлнө. Төлбөр баталгаажмагц эрхийг идэвхжүүлнэ.",
+      "label": "QPAY ГИШҮҮНЧЛЭЛ",
+      "qrCopy": "QR кодыг уншуулах эсвэл QPay-г нээнэ үү.",
+      "checking": "ШАЛГАЖ БАЙНА...",
+      "creating": "ҮҮСГЭЖ БАЙНА...",
+      "openButton": "QPAY НЭЭХ ↗",
+      "checkButton": "ТӨЛБӨР ШАЛГАХ",
+      "pendingCopy": "Merchant credential нэмэхэд автоматаар ажиллана.",
+      "phoneButton": "УТСААР ХОЛБОГДОХ",
+      "createButton": "QPAY НЭХЭМЖЛЭХ ҮҮСГЭХ",
+      "pendingTitle": "QPay холболт хүлээгдэж байна"
+    },
+    "finalCta": {
+      "title": "ХҮЧТЭЙ ЭХЭЛ.",
+      "accent": "ТУУШТАЙ ҮРГЭЛЖЛҮҮЛ.",
+      "button": "9917-0917 · ЗАЛГАХ ↗",
+      "eyebrow": "READY WHEN YOU ARE"
+    },
+    "timetable": {
+      "copy": "Групп хичээлийн шинэчилсэн цаг болон тухайн өдрийн сул суудлыг манай утсаар шууд лавлаарай.",
+      "note": "* Хичээлийн цаг өөрчлөгдөж болох тул ирэхээсээ өмнө утсаар баталгаажуулна уу.",
+      "label": "ЦАГИЙН ХУВААРЬ",
+      "title": "ХУВААРИА",
+      "accent": "УТСААР БАТАЛГААЖУУЛ.",
+      "countSuffix": "хичээл"
+    },
+    "brandTitle": "ADRENALINE",
+    "membership": {
+      "copy": "1, 3, 6 сарын багцаас зорилгодоо тохирох хугацаагаа сонго. Одоогийн үнэ, хөнгөлөлтийг утсаар баталгаажуулна.",
+      "note": "* Багцын үнэ, нөхцөл болон идэвхтэй урамшууллыг 9917-0917 утсаар лавлана уу.",
+      "badge": "ТУУШТАЙ СОНГОЛТ",
+      "label": "ГИШҮҮНЧЛЭЛ",
+      "title": "ӨӨРИЙН ХЭМНЭЛЭЭ",
+      "accent": "СОНГО.",
+      "button": "ҮНЭ АСУУХ · ЗАЛГАХ ↗",
+      "priceSuffix": ""
+    },
+    "coachSection": {
+      "copy": "Мэргэжлийн чиглэл бүрээр зөв техник, бодит ахиц, тогтвортой үр дүнд хөтөлнө.",
+      "label": "ДАСГАЛЖУУЛАГЧИД",
+      "title": "ТАНЫ АХИЦЫН",
+      "accent": "АРД БАЙХ ХҮМҮҮС."
+    },
+    "brandSubtitle": "FITNESS SPORT CENTER"
+  },
+  "pages": [
+    {
+      "id": "a6eaf1a1-8fef-4796-aa2f-9a2f52843d81",
+      "slug": "page-1784776053739",
+      "title": "Заал",
+      "blocks": [
+        {
+          "id": "d8833918-67bd-477b-bdd7-34aa690adb38",
+          "body": "",
+          "type": "image",
+          "image": "/migrated/885f675d-d116-444c-aef5-292dc72dceca.webp",
+          "title": "",
+          "buttonUrl": "",
+          "buttonLabel": ""
+        },
+        {
+          "id": "23532ac5-2cc3-419a-a517-6ddced7c3445",
+          "body": "",
+          "type": "image",
+          "image": "/migrated/bfa6b225-3ce7-46c3-a064-9cc396b362e7.webp",
+          "title": "",
+          "buttonUrl": "",
+          "buttonLabel": ""
+        }
+      ],
+      "status": "published",
+      "excerpt": "Цэлгэр, саруул том ус цэвэршүүлэгчтэй заал",
+      "seoTitle": "Адреналин спорт фитнесс төв нь БГД байрлах хамгийн том заал, олон тоног төхөөрөмжтэй залуусын өргөнөөр үйлчлүүлдэг чийрэгжүүлэх хөтөлбөртэй цогц фитнесс юм.",
+      "heroImage": "/migrated/4a811575-c21e-408e-b632-02cf353c037b.webp",
+      "showInNav": true,
+      "seoDescription": "Адреналин фитнесс төв."
+    }
+  ],
+  "design": {
+    "font": "sans",
+    "text": "#f5f5f3",
+    "order": [
+      "home",
+      "stats",
+      "tracker",
+      "about",
+      "membership",
+      "coaches",
+      "schedule",
+      "contact",
+      "final"
+    ],
+    "accent": "#e31b23",
+    "hidden": [
+      "schedule"
+    ],
+    "radius": 0,
+    "spacing": 100,
+    "surface": "#101216",
+    "textSize": 17,
+    "stickyCta": true,
+    "background": "#08090b"
+  },
+  "coaches": [
+    {
+      "id": "coach-1",
+      "code": "PT",
+      "copy": "-2021 Classic Physique ангилалын аварга",
+      "name": "Төгөлдөр",
+      "role": "Хувийн дасгалжуулагч",
+      "focus": "Хүч · Булчингийн хөгжил · Суурь техник",
+      "image": "/migrated/0529f97c-0a3c-4ca2-9bfd-b7a9dcb38349.webp"
+    },
+    {
+      "id": "coach-2",
+      "code": "PT",
+      "copy": "Бодит зорилго, хэмжигдэхүйц ахиц, амьдралын хэмнэлд нийцсэн хөтөлбөр.",
+      "name": "",
+      "role": "Персонал дасгалжуулагч",
+      "focus": "Жин бууруулах · Галбир · Хувийн төлөвлөгөө",
+      "image": ""
+    },
+    {
+      "id": "coach-3",
+      "code": "GR",
+      "copy": "Эрч хүчтэй хамт олон дунд хөдөлгөөнөөс таашаал авах групп хичээлүүд.",
+      "name": "",
+      "role": "Групп хичээлийн багш",
+      "focus": "Functional · HIIT · Mobility",
+      "image": ""
+    }
+  ],
+  "schedule": [
+    {
+      "day": "Ням",
+      "sessions": [
+        [
+          "11:00",
+          "Recovery Flow"
+        ],
+        [
+          "13:00",
+          "Open Gym"
+        ],
+        [
+          "16:00",
+          "Core & Balance"
+        ]
+      ]
+    }
+  ],
+  "siteInfo": {
+    "name": "Adrenaline Fitness Sport Center",
+    "email": "",
+    "phone": "9917-0917",
+    "mapUrl": "https://www.google.com/maps/search/?api=1&query=Adrenaline+Fitness+Sport+Center+Bayangol+17+Ulaanbaatar",
+    "phone2": "9947-3322",
+    "address": "Баянгол дүүрэг, 17-р хороо, Улаанбаатар хот",
+    "phoneHref": "99170917",
+    "phone2Href": "99473322",
+    "facebookUrl": "https://www.facebook.com/adrenaline.fitness.mongolia"
+  },
+  "membershipPlans": [
+    {
+      "id": "starter-1m",
+      "name": "Эхлэгч",
+      "price": 180000,
+      "duration": "1 сарын эрх",
+      "featured": false,
+      "features": [],
+      "description": "Суурь үндсэн техникийн талаар заалны багштай хамтарсан бэлтгэл"
+    },
+    {
+      "id": "momentum-3m",
+      "name": "Дурлагч",
+      "price": 432000,
+      "duration": "3 сарын эрх",
+      "featured": true,
+      "features": [
+        "Фитнес заал",
+        "Сар бүрийн ахицын үнэлгээ",
+        "Хооллолтын зөвлөгөө "
+      ],
+      "description": "Үр дүнгээ зуршил болгож биеийн галбир, хүч тэнхээгээ дараагийн түвшинд хүргэ"
+    },
+    {
+      "id": "elite-6m",
+      "name": "Хуйрнин шуугигч",
+      "price": 756000,
+      "duration": "6 сарын эрх",
+      "features": [
+        "Фитнес заал",
+        "Сар бүрийн ахицын үнэлгээ",
+        "Хооллолтын суурь зөвлөгөө",
+        "Дасгалын программ"
+      ],
+      "description": "Урт хугацааны өөрчлөлт, тогтвортой гүйцэтгэлд."
+    }
+  ]
+}
